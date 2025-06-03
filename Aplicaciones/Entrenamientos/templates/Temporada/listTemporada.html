@@ -1,0 +1,168 @@
+{% extends 'index.html' %}
+
+{% block title %}Lista de Temporadas{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Lista de Temporadas</h2>
+    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarTemporada">
+        Crear Nueva Temporada
+    </button>
+
+    <table id="tbl_temporadas" class="table table-bordered table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Fecha de Inicio</th>
+                <th>Fecha de Fin</th>
+                <th>Fecha de Creación</th>
+                <th>Fecha de Actualización</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for temporada in temporadas %}
+            <tr>
+                <td>{{ temporada.id }}</td>
+                <td>{{ temporada.fecha_inicio_temp|date:"d/m/Y" }}</td>
+                <td>{{ temporada.fecha_fin_temp|date:"d/m/Y" }}</td>
+                <td>{{ temporada.fecha_creacion_temp|date:"d/m/Y H:i" }}</td>
+                <td>{{ temporada.fecha_actualizacion_temp|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <button
+                        class="btn btn-warning btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalEditarTemporada"
+                        data-id="{{ temporada.id }}"
+                        data-inicio="{{ temporada.fecha_inicio_temp|date:'Y-m-d' }}"
+                        data-fin="{{ temporada.fecha_fin_temp|date:'Y-m-d' }}"
+>
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+
+                    <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionTemporada({{ temporada.id }})" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <form id="form-eliminar-temporada-{{ temporada.id }}" method="POST" action="{% url 'delete_temporada' temporada.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="id_temporada" value="{{ temporada.id }}">
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL AGREGAR TEMPORADA -->
+<div class="modal fade" id="modalAgregarTemporada" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'add_temporada' %}">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Registrar Nueva Temporada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Fecha de Inicio</label>
+                        <input type="date" name="fecha_inicio_temp" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Fecha de Fin</label>
+                        <input type="date" name="fecha_fin_temp" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR TEMPORADA -->
+<div class="modal fade" id="modalEditarTemporada" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formEditarTemporada">
+                {% csrf_token %}
+                <input type="hidden" name="id_temporada" id="id_temporada">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Editar Temporada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_fecha_inicio_temp">Fecha de Inicio</label>
+                        <input type="date" name="fecha_inicio_temp" id="edit_fecha_inicio_temp" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_fecha_fin_temp">Fecha de Fin</label>
+                        <input type="date" name="fecha_fin_temp" id="edit_fecha_fin_temp" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmarEliminacionTemporada(id) {
+        iziToast.question({
+            timeout: 3000,
+            close: false,
+            overlay: true,
+            displayMode: 'once',
+            title: '¿Estás seguro?',
+            message: 'Esta acción eliminará la temporada de forma permanente.',
+            position: 'center',
+            buttons: [
+                ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
+                    document.getElementById('form-eliminar-temporada-' + id).submit();
+                    instance.hide({}, toast);
+                }, true],
+                ['<button>Cancelar</button>', function (instance, toast) {
+                    instance.hide({}, toast);
+                }]
+            ]
+        });
+    }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEditar = document.getElementById('modalEditarTemporada');
+        modalEditar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const inicio = button.getAttribute('data-inicio');
+            const fin = button.getAttribute('data-fin');
+            document.getElementById('formEditarTemporada').action = `/temporadas/edit/${id}/`;
+            document.getElementById('id_temporada').value = id;
+            document.getElementById('edit_fecha_inicio_temp').value = inicio;
+            document.getElementById('edit_fecha_fin_temp').value = fin;
+        });
+
+        $('#tbl_temporadas').DataTable({
+            dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+                 '<"row"<"col-12"tr>>' +
+                 '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+            buttons: [
+                { extend: 'copyHtml5', text: '<i class="bi bi-clipboard"></i> Copiar', className: 'btn btn-secondary btn-sm' },
+                { extend: 'excelHtml5', text: '<i class="bi bi-file-earmark-excel"></i> Excel', className: 'btn btn-success btn-sm' },
+                { extend: 'csvHtml5', text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV', className: 'btn btn-info btn-sm' },
+                { extend: 'pdfHtml5', text: '<i class="bi bi-file-earmark-pdf"></i> PDF', className: 'btn btn-danger btn-sm' },
+                { extend: 'print', text: '<i class="bi bi-printer"></i> Imprimir', className: 'btn btn-primary btn-sm' }
+            ],
+            language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" }
+        });
+    });
+</script>
+{% endblock %}

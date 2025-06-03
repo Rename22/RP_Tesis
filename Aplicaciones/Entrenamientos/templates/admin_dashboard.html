@@ -1,0 +1,54 @@
+{% extends 'index.html' %}
+
+{% block title %}Panel de Administración{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Mensaje de bienvenida -->
+    <div class="mb-4 text-center">
+        <h4>
+            Bienvenido 
+            {% if rol_usuario == 'admin_dios' %}
+                Admin Dios
+            {% elif rol_usuario == 'admin' %}
+                Administrador
+            {% elif rol_usuario == 'entrenador' %}
+                Entrenador
+            {% elif rol_usuario == 'jugador' %}
+                Jugador
+            {% else %}
+                Usuario
+            {% endif %}
+            <strong>{{ usuario.nombres_usu }}</strong>
+        </h4>
+    </div>
+
+    <h2 class="text-center mb-4">Panel de Administración</h2>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-grid gap-3">
+
+                {% if rol_usuario == 'admin_dios' %}
+                    <a href="{% url 'list_admins' %}" class="btn btn-primary btn-lg">Administradores</a>
+                {% endif %}
+
+                {% if rol_usuario == 'admin' %}
+                    <a href="{% url 'list_entrenadores' %}" class="btn btn-primary btn-lg">Entrenadores</a>
+                    <a href="{% url 'list_categoria' %}" class="btn btn-info btn-lg">Categoría</a>
+                    <a href="{% url 'list_temporadas' %}" class="btn btn-success btn-lg">Temporadas</a>
+                    <a href="{% url 'list_equipo' %}" class="btn btn-warning btn-lg">Equipo</a>
+                    <a href="{% url 'list_jugadores' %}" class="btn btn-secondary btn-lg">Jugadores</a>
+                    
+                    
+                {% endif %}
+
+                {% if rol_usuario == 'entrenador' %}
+                    <a href="{% url 'list_jugadores' %}" class="btn btn-secondary btn-lg">Jugadores</a>
+                    
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,617 @@
+{% extends 'index.html' %}
+{% block title %}Lista de Jugadores{% endblock %}
+
+{% block content %}
+<div class="table-responsive">
+    <h2 class="text-center">Lista de Jugadores</h2>
+    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarJugador">
+        Crear Nuevo Jugador
+    </button>
+
+    <table id="tbl_jugadores" class="table table-bordered table-striped table-hover">
+      <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Cédula</th>
+            <th>Nombres</th>
+            <th>Apellidos</th>
+            <th>Equipo</th>
+            <th>Categoría</th>
+            <th>Entrenador</th>
+            <th>Estado</th>
+            <th>Último Acceso</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+        <tbody>
+            {% for j in jugadores %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ j.fk_id_usu.correo_usu }}</td>
+              <td>{{ j.fk_id_usu.telefono_usu }}</td>
+              <td>{{ j.fk_id_usu.cedula_usu }}</td>
+              <td>{{ j.fk_id_usu.nombres_usu }}</td>
+              <td>{{ j.fk_id_usu.primer_apellido_usu }} {{ j.fk_id_usu.segundo_apellido_usu }}</td>
+              <td>{{ j.fk_id_equ.nombre_equ|default:"No asignado" }}</td>
+              <td>{{ j.fk_id_cat.nombre_cat|default:"No asignado" }}</td>
+              <td>
+                  {% if j.fk_id_ent and j.fk_id_ent.fk_id_usu %}
+                      {{ j.fk_id_ent.fk_id_usu.nombres_usu }} {{ j.fk_id_ent.fk_id_usu.primer_apellido_usu }}
+                  {% else %}
+                      <span class="text-muted">No asignado</span>
+                  {% endif %}
+              </td>
+              <td>
+                  {% if j.fk_id_usu.estado_usu == 'activo' %}
+                      <span class="badge bg-success">Activo</span>
+                  {% else %}
+                      <span class="badge bg-secondary">Inactivo</span>
+                  {% endif %}
+              </td>
+              <td>
+                  {% if j.fk_id_usu.last_login %}
+                      {{ j.fk_id_usu.last_login|date:"d/m/Y H:i" }}
+                  {% else %}
+                      <span class="text-muted">Nunca</span>
+                  {% endif %}
+              </td>
+                <td>
+                  <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarJugador"
+                    data-id="{{ j.id }}"
+                    data-idusu="{{ j.fk_id_usu.id }}"
+
+                    data-correo="{{ j.fk_id_usu.correo_usu }}"
+                    data-telefono="{{ j.fk_id_usu.telefono_usu }}"
+                    data-cedula="{{ j.fk_id_usu.cedula_usu }}"
+                    data-nombres="{{ j.fk_id_usu.nombres_usu }}"
+                    data-papellido="{{ j.fk_id_usu.primer_apellido_usu }}"
+                    data-sapellido="{{ j.fk_id_usu.segundo_apellido_usu }}"
+                    data-direccion="{{ j.fk_id_usu.direccion_usu }}"
+                    data-fecha-nacimiento="{{ j.fecha_nacimiento_jug|date:'Y-m-d' }}"
+                    data-edad="{{ j.edad_jug }}"
+                    data-numero="{{ j.numero_jug }}"
+                    data-peso="{{ j.peso_jug | stringformat:".2f" }}"
+                    data-altura="{{ j.altura_jug | stringformat:".2f" }}"
+                    data-posicion="{{ j.posicion_jug }}"
+                    data-pie="{{ j.pie_dominante_jug }}"
+                    data-representante="{{ j.nombre_representante_jug }}"
+                    data-emergencia="{{ j.numero_emergencia_jug }}"
+                    data-fecha-ingreso="{{ j.fecha_ingreso_jug|date:'Y-m-d' }}"
+                    data-equipo="{{ j.fk_id_equ.id|default:'' }}"
+                    data-categoria="{{ j.fk_id_cat.id|default:'' }}"
+                    data-entrenador="{{ j.fk_id_ent.id|default:'' }}"
+                    data-estado="{{ j.fk_id_usu.estado_usu }}">
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+
+                           
+                    
+                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#modalConfirmarEliminarJugador"
+                            data-id="{{ j.id }}"
+                            title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>  
+
+<!-- MODAL AGREGAR JUGADOR -->
+<div class="modal fade" id="modalAgregarJugador" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'add_jugador' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Registrar Jugador</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="container-fluid">
+            <div class="row">
+
+              <!-- Campos Usuario -->
+              <div class="col-md-6 mb-3">
+                <label>Correo</label>
+                <input type="email" name="correo_usu" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Cédula</label>
+                <input type="text" name="cedula_usu" class="form-control" required>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label>Teléfono</label>
+                <input type="text" name="telefono_usu" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Nombres</label>
+                <input type="text" name="nombres_usu" class="form-control" required>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label>Primer Apellido</label>
+                <input type="text" name="primer_apellido_usu" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Segundo Apellido</label>
+                <input type="text" name="segundo_apellido_usu" class="form-control" required>
+              </div>
+
+              <div class="col-12 mb-3">
+                <label>Dirección</label>
+                <textarea name="direccion_usu" class="form-control"></textarea>
+              </div>
+
+              <!-- Campos Jugador -->
+              <div class="col-md-6 mb-3">
+                <label>Fecha de Nacimiento</label>
+                <input type="date" name="fecha_nacimiento_jug" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Edad</label>
+                <input type="number" name="edad_jug" class="form-control" readonly>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label>Número</label>
+                <input type="number" name="numero_jug" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Peso (kg)</label>
+                <input type="number" step="0.01" name="peso_jug" class="form-control">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label>Altura (m)</label>
+                <input type="number" step="0.01" name="altura_jug" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Posición</label>
+                <select name="posicion_jug" class="form-select" required>
+                  <option value="">-- Seleccionar --</option>
+                  <option value="PORTERO">PORTERO</option>
+                  <option value="DEFENSA CENTRAL">DEFENSA CENTRAL</option>
+                  <option value="LATERAL DERECHO">LATERAL DERECHO</option>
+                  <option value="LATERAL IZQUIERDO">LATERAL IZQUIERDO</option>
+                  <option value="CENTROCAMPISTA DEFENSIVO">CENTROCAMPISTA DEFENSIVO</option>
+                  <option value="CENTROCAMPISTA OFENSIVO">CENTROCAMPISTA OFENSIVO</option>
+                  <option value="EXTREMO DERECHO">EXTREMO DERECHO</option>
+                  <option value="EXTREMO IZQUIERDO">EXTREMO IZQUIERDO</option>
+                  <option value="DELANTERO CENTRO">DELANTERO CENTRO</option>
+                </select>
+              </div>
+              
+
+              <div class="col-md-6 mb-3">
+                <label>Pie Dominante</label>
+                <select name="pie_dominante_jug" class="form-select" required>
+                  <option value="">-- Seleccionar --</option>
+                  <option value="IZQUIERDO">IZQUIERDO</option>
+                  <option value="DERECHO">DERECHO</option>
+                </select>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label>Nombre Representante</label>
+                <input type="text" name="nombre_representante_jug" class="form-control">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label>Número de Emergencia</label>
+                <input type="text" name="numero_emergencia_jug" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Fecha de Ingreso</label>
+                <input type="date" name="fecha_ingreso_jug" class="form-control">
+              </div>
+
+              <!-- Selects -->
+              <div class="col-md-4 mb-3">
+                <label>Equipo</label>
+                <select name="fk_id_equ" class="form-select" id="equipo_select">
+                  <option value="">-- Seleccionar --</option>
+                  {% for equipo in equipos %}
+                    <option value="{{ equipo.id }}">{{ equipo.nombre_equ }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label>Categoría</label>
+                <select name="fk_id_cat" class="form-select" id="categoria_select">
+                  <option value="">-- Selecciona un equipo primero --</option>
+                </select>
+              </div>
+              
+              {% if request.user.rol_usu != 'entrenador' %}
+              <div class="col-md-4 mb-3">
+                <label>Entrenador</label>
+                <select name="fk_id_ent" class="form-select">
+                  <option value="">-- Seleccionar --</option>
+                  {% for entrenador in entrenadores %}
+                    <option value="{{ entrenador.id }}">
+                      {{ entrenador.fk_id_usu.nombres_usu }} {{ entrenador.fk_id_usu.primer_apellido_usu }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              {% endif %}
+
+            </div> <!-- row -->
+          </div> <!-- container-fluid -->
+        </div> <!-- modal-body -->
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Guardar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR JUGADOR -->
+<div class="modal fade" id="modalEditarJugador" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'edit_jugador' %}" id="formEditarJugador">
+        {% csrf_token %}
+        <input type="hidden" name="id_jug" id="edit_id_jugador">
+        <input type="hidden" name="id_usu" id="edit_id_usuario">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title">Editar Jugador</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            
+            <!-- Datos del Usuario -->
+            <div class="col-md-6 mb-3">
+              <label>Correo</label>
+              <input type="email" name="correo_usu" id="edit_correo" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Cédula</label>
+              <input type="text" name="cedula_usu" id="edit_cedula" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Teléfono</label>
+              <input type="text" name="telefono_usu" id="edit_telefono" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Nombres</label>
+              <input type="text" name="nombres_usu" id="edit_nombres" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Primer Apellido</label>
+              <input type="text" name="primer_apellido_usu" id="edit_papellido" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Segundo Apellido</label>
+              <input type="text" name="segundo_apellido_usu" id="edit_sapellido" class="form-control" required>
+            </div>
+            <div class="col-12 mb-3">
+              <label>Dirección</label>
+              <textarea name="direccion_usu" id="edit_direccion" class="form-control"></textarea>
+            </div>
+
+            <!-- Datos del Jugador -->
+            <div class="col-md-6 mb-3">
+              <label>Fecha de Nacimiento</label>
+              <input type="date" name="fecha_nacimiento_jug" id="edit_fecha_nac" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Edad</label>
+              <input type="number" name="edad_jug" id="edit_edad" class="form-control" readonly>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Número</label>
+              <input type="number" name="numero_jug" id="edit_numero" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Peso (kg)</label>
+              <input type="number" step="0.01" name="peso_jug" id="edit_peso" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Altura (m)</label>
+              <input type="number" step="0.01" name="altura_jug" id="edit_altura" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Posición</label>
+              <select name="posicion_jug" id="edit_posicion" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                <option value="PORTERO">PORTERO</option>
+                <option value="DEFENSA CENTRAL">DEFENSA CENTRAL</option>
+                <option value="LATERAL DERECHO">LATERAL DERECHO</option>
+                <option value="LATERAL IZQUIERDO">LATERAL IZQUIERDO</option>
+                <option value="CENTROCAMPISTA DEFENSIVO">CENTROCAMPISTA DEFENSIVO</option>
+                <option value="CENTROCAMPISTA OFENSIVO">CENTROCAMPISTA OFENSIVO</option>
+                <option value="EXTREMO DERECHO">EXTREMO DERECHO</option>
+                <option value="EXTREMO IZQUIERDO">EXTREMO IZQUIERDO</option>
+                <option value="DELANTERO CENTRO">DELANTERO CENTRO</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Pie Dominante</label>
+              <select name="pie_dominante_jug" id="edit_pie" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                <option value="IZQUIERDO">IZQUIERDO</option>
+                <option value="DERECHO">DERECHO</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Representante</label>
+              <input type="text" name="nombre_representante_jug" id="edit_representante" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Teléfono Emergencia</label>
+              <input type="text" name="numero_emergencia_jug" id="edit_emergencia" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Fecha Ingreso</label>
+              <input type="date" name="fecha_ingreso_jug" id="edit_fecha_ingreso" class="form-control">
+            </div>
+
+            <!-- Selects -->
+            <div class="col-md-4 mb-3">
+              <label>Equipo</label>
+              <select name="fk_id_equ" id="edit_equipo" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                {% for equipo in equipos %}
+                  <option value="{{ equipo.id }}">{{ equipo.nombre_equ }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Categoría</label>
+              <select name="fk_id_cat" id="edit_categoria" class="form-select">
+                <option value="">-- Seleccionar --</option>
+              </select>
+            </div>
+            {% if request.user.rol_usu != 'entrenador' %}
+            <div class="col-md-4 mb-3">
+              <label>Entrenador</label>
+              <select name="fk_id_ent" id="edit_entrenador" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                {% for entrenador in entrenadores %}
+                  <option value="{{ entrenador.id }}">{{ entrenador.fk_id_usu.nombres_usu }} {{ entrenador.fk_id_usu.primer_apellido_usu }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            <div class="col-md-4 mb-3">
+              <label>Estado</label>
+              <select name="estado_usu" id="edit_estado" class="form-select">
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning">Actualizar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const equipoCategorias = {
+      {% for equipo in equipos %}
+        "{{ equipo.id }}": [
+          {% for cat in equipo.categorias.all %}
+            { id: "{{ cat.id }}", nombre: "{{ cat.nombre_cat }}" }{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        ]{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    };
+
+    const equipoSelect = document.getElementById('equipo_select');
+    const categoriaSelect = document.getElementById('categoria_select');
+
+    equipoSelect.addEventListener('change', function () {
+      const equipoId = this.value;
+      categoriaSelect.innerHTML = '';
+
+      if (equipoCategorias[equipoId]) {
+        categoriaSelect.innerHTML += `<option value="">-- Seleccionar --</option>`;
+        equipoCategorias[equipoId].forEach(cat => {
+          categoriaSelect.innerHTML += `<option value="${cat.id}">${cat.nombre}</option>`;
+        });
+      } else {
+        categoriaSelect.innerHTML = `<option value="">-- Sin categorías disponibles --</option>`;
+      }
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Calcular edad en base a fecha de nacimiento
+    const nacimientoInput = document.querySelector('input[name="fecha_nacimiento_jug"]');
+    const edadInput = document.querySelector('input[name="edad_jug"]');
+
+    nacimientoInput.addEventListener('change', function () {
+      const fechaNacimiento = new Date(this.value);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+      const m = hoy.getMonth() - fechaNacimiento.getMonth();
+
+      if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+        edad--;
+      }
+
+      edadInput.value = isNaN(edad) ? '' : edad;
+    });
+
+    // Establecer fecha de ingreso por defecto al abrir el modal
+    const modalAgregarJugador = document.getElementById('modalAgregarJugador');
+    modalAgregarJugador.addEventListener('shown.bs.modal', function () {
+      const fechaIngresoInput = document.querySelector('input[name="fecha_ingreso_jug"]');
+      const hoy = new Date().toISOString().split('T')[0];
+      if (!fechaIngresoInput.value) {
+        fechaIngresoInput.value = hoy;
+      }
+    });
+  });
+</script>
+
+<script>
+  $(document).ready(function () {
+      // Inicializar DataTable para la tabla de Categorías
+      $('#tbl_jugadores').DataTable({
+          dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+              '<"row"<"col-12"tr>>' +
+              '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+          buttons: [
+              {
+                  extend: 'copyHtml5',
+                  text: '<i class="bi bi-clipboard"></i> Copiar',
+                  className: 'btn btn-secondary btn-sm',
+                  exportOptions: { columns: ':not(:last-child)' }
+              },
+              {
+                  extend: 'excelHtml5',
+                  text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                  className: 'btn btn-success btn-sm',
+                  exportOptions: { columns: ':not(:last-child)' }
+              },
+              {
+                  extend: 'csvHtml5',
+                  text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                  className: 'btn btn-info btn-sm',
+                  exportOptions: { columns: ':not(:last-child)' }
+              },
+              {
+                  extend: 'pdfHtml5',
+                  text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                  className: 'btn btn-danger btn-sm',
+                  exportOptions: { columns: ':not(:last-child)' }
+              },
+              {
+                  extend: 'print',
+                  text: '<i class="bi bi-printer"></i> Imprimir',
+                  className: 'btn btn-primary btn-sm',
+                  exportOptions: { columns: ':not(:last-child)' }
+              }
+          ],
+          language: {
+              url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+          }
+      });
+  });
+</script>
+
+
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const modalEditar = document.getElementById('modalEditarJugador');
+      
+      modalEditar.addEventListener('show.bs.modal', function(event) {
+          const button = event.relatedTarget;
+          const modal = this;
+  
+          // Función helper para asignar valores
+          const setValue = (id, value) => {
+              const element = modal.querySelector(id);
+              if (element && value !== undefined) element.value = value;
+          };
+  
+          // Asignar valores a los campos
+          setValue('#edit_id_jugador', button.dataset.id);
+          setValue('#edit_id_usuario', button.dataset.idusu);
+
+
+
+          setValue('#edit_correo', button.dataset.correo);
+          setValue('#edit_telefono', button.dataset.telefono);
+          setValue('#edit_cedula', button.dataset.cedula);
+          setValue('#edit_nombres', button.dataset.nombres);
+          setValue('#edit_papellido', button.dataset.papellido);
+          setValue('#edit_sapellido', button.dataset.sapellido);
+          setValue('#edit_direccion', button.dataset.direccion);
+          setValue('#edit_fecha_nac', button.dataset.fechaNacimiento);
+          setValue('#edit_edad', button.dataset.edad);
+          setValue('#edit_numero', button.dataset.numero);
+          setValue('#edit_peso', button.dataset.peso);
+          setValue('#edit_altura', button.dataset.altura);
+          setValue('#edit_posicion', button.dataset.posicion);
+          setValue('#edit_pie', button.dataset.pie);
+          setValue('#edit_representante', button.dataset.representante);
+          setValue('#edit_emergencia', button.dataset.emergencia);
+          setValue('#edit_fecha_ingreso', button.dataset.fechaIngreso);
+          setValue('#edit_estado', button.dataset.estado);
+          setValue('#edit_equipo', button.dataset.equipo);
+          setValue('#edit_categoria', button.dataset.categoria);
+          setValue('#edit_entrenador', button.dataset.entrenador);
+  
+          // Actualizar categorías según equipo seleccionado
+          actualizarCategorias(button.dataset.equipo, button.dataset.categoria);
+      });
+  
+      // Función para actualizar categorías
+      function actualizarCategorias(equipoId, categoriaId) {
+          const categoriaSelect = document.getElementById('edit_categoria');
+          categoriaSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+  
+          if (equipoId) {
+              const categorias = {
+                  {% for equipo in equipos %}
+                  "{{ equipo.id }}": [
+                      {% for cat in equipo.categorias.all %}
+                      {id: "{{ cat.id }}", nombre: "{{ cat.nombre_cat }}"},
+                      {% endfor %}
+                  ],
+                  {% endfor %}
+              };
+  
+              if (categorias[equipoId]) {
+                  categorias[equipoId].forEach(cat => {
+                      const option = document.createElement('option');
+                      option.value = cat.id;
+                      option.textContent = cat.nombre;
+                      option.selected = (cat.id == categoriaId);
+                      categoriaSelect.appendChild(option);
+                  });
+              }
+          }
+      }
+  
+      // Evento para calcular edad automáticamente
+      document.getElementById('edit_fecha_nac').addEventListener('change', function() {
+          const fechaNac = new Date(this.value);
+          const hoy = new Date();
+          let edad = hoy.getFullYear() - fechaNac.getFullYear();
+          const mes = hoy.getMonth() - fechaNac.getMonth();
+          
+          if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+              edad--;
+          }
+          
+          document.getElementById('edit_edad').value = edad;
+      });
+  });
+
+  document.getElementById('formEditarJugador').addEventListener('submit', function(e) {
+    console.log('Enviando ID USUARIO:', document.getElementById('edit_id_usuario').value);
+    console.log('Enviando ID JUGADOR:', document.getElementById('edit_id_jugador').value);
+    console.log("Valor asignado a ID USUARIO:", modal.querySelector('#edit_id_usuario').value);
+    console.log("Valor asignado a ID JUGADOR:", modal.querySelector('#edit_id_jugador').value);
+});
+
+
+  </script>
+  
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "index.html" %}
+
+{% block title %}Crear Contraseña{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0">Define tu Contraseña</h4>
+            </div>
+            <div class="card-body px-4 py-4">
+                <form method="post" id="formPassword">
+                    {% csrf_token %}
+                    <input type="hidden" name="token" value="{{ token }}">
+
+                    <div class="mb-3 position-relative">
+                        <label for="password" class="form-label">Nueva Contraseña</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="password" id="password" required>
+                            <span class="input-group-text">
+                                <i class="bi bi-eye-slash toggle-password" data-target="#password" style="cursor: pointer;"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 position-relative">
+                        <label for="confirmar" class="form-label">Confirmar Contraseña</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="confirmar" id="confirmar" required>
+                            <span class="input-group-text">
+                                <i class="bi bi-eye-slash toggle-password" data-target="#confirmar" style="cursor: pointer;"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success">Guardar Contraseña</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(document).ready(function () {
+    // Validación con jQuery Validate
+    $("#formPassword").validate({
+        errorClass: 'is-invalid',
+        validClass: 'is-valid',
+        errorElement: 'div',
+        errorPlacement: function (error, element) {
+            if (element.closest('.input-group').length) {
+                error.addClass('invalid-feedback');
+                error.insertAfter(element.closest('.input-group')); // ← fuera del input-group
+            } else {
+                error.addClass('invalid-feedback');
+                error.insertAfter(element);
+            }
+        },
+        rules: {
+            password: {
+                required: true,
+                minlength: 4
+            },
+            confirmar: {
+                required: true,
+                minlength: 4,
+                equalTo: "#password"
+            }
+        },
+        messages: {
+            password: {
+                required: "La contraseña es obligatoria.",
+                minlength: "Debe tener al menos 4 caracteres."
+            },
+            confirmar: {
+                required: "Por favor confirma tu contraseña.",
+                minlength: "Debe tener al menos 4 caracteres.",
+                equalTo: "Las contraseñas no coinciden."
+            }
+        }
+    });
+
+    // Mostrar/ocultar contraseña
+    $(".toggle-password").click(function () {
+        const input = $($(this).data("target"));
+        const icon = $(this).find('i');
+        if (input.attr("type") === "password") {
+            input.attr("type", "text");
+            icon.removeClass("bi-eye-slash").addClass("bi-eye");
+        } else {
+            input.attr("type", "password");
+            icon.removeClass("bi-eye").addClass("bi-eye-slash");
+        }
+    });
+});
+
+
+</script>
+{% endblock %}
