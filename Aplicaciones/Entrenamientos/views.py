@@ -1012,7 +1012,11 @@ def edit_jugador(request):
 
     if request.method == 'POST':
         jugador = get_object_or_404(Jugador, pk=request.POST['id_jug'])
-        usuario = get_object_or_404(Usuario, pk=request.POST['id_usu'])
+        usuario_id = request.POST.get('id_usu') or jugador.fk_id_usu_id
+        if not usuario_id:
+            messages.error(request, "El jugador no tiene usuario asociado.")
+            return redirect('list_jugadores')
+        usuario = get_object_or_404(Usuario, pk=usuario_id)
 
         # Actualizar Usuario
         usuario.correo_usu = request.POST['correo_usu']
