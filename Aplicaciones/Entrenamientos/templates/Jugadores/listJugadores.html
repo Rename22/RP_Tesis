@@ -88,12 +88,12 @@
 
                            
                     
-                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
-                            data-bs-target="#modalConfirmarEliminarJugador"
-                            data-id="{{ j.id }}"
-                            title="Eliminar">
+                    <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionJugador({{ j.id }})" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
+                    <form id="form-eliminar-jugador-{{ j.id }}" method="POST" action="{% url 'delete_jugador' j.id %}">
+                        {% csrf_token %}
+                    </form>
                 </td>
             </tr>
             {% endfor %}
@@ -610,5 +610,29 @@
 
 
   </script>
-  
+
+  <script>
+    // Confirmar eliminación con iziToast
+    function confirmarEliminacionJugador(id) {
+      iziToast.question({
+        timeout: 3000,
+        close: false,
+        overlay: true,
+        displayMode: 'once',
+        title: '¿Estás seguro?',
+        message: 'Esta acción eliminará el jugador de forma permanente.',
+        position: 'center',
+        buttons: [
+          ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
+            document.getElementById('form-eliminar-jugador-' + id).submit();
+            instance.hide({}, toast);
+          }, true],
+          ['<button>Cancelar</button>', function (instance, toast) {
+            instance.hide({}, toast);
+          }]
+        ]
+      });
+    }
+  </script>
+
 {% endblock %}
