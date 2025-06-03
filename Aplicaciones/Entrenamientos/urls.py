@@ -54,10 +54,8 @@ urlpatterns = [
     # -------------------------------CRUD JUGADORES-----------------------------
     path('jugadores/', views.list_jugadores, name='list_jugadores'),
     path('jugadores/add/', views.add_jugador, name='add_jugador'),
-    path('jugadores/editar/', views.edit_jugador, name='edit_jugador')
-    
-
-    #path('jugadores/delete/<int:pk>/', views.delete_jugador, name='delete_jugador'),
+    path('jugadores/editar/', views.edit_jugador, name='edit_jugador'),
+    path('jugadores/delete/<int:pk>/', views.delete_jugador, name='delete_jugador'),
 
     
 

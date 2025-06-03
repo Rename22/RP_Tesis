@@ -1051,5 +1051,30 @@ def edit_jugador(request):
         return redirect('list_jugadores')
 
 
+@login_required
+def delete_jugador(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para eliminar jugadores.")
+        return redirect('list_jugadores')
+
+    if request.method == 'POST':
+        jugador = get_object_or_404(Jugador, pk=pk)
+
+        if jugador.prueba_set.exists() or jugador.resultadomacro_set.exists():
+            messages.error(request, "No se puede eliminar el jugador porque tiene registros asociados.")
+            return redirect('list_jugadores')
+
+        usuario = jugador.fk_id_usu
+        try:
+            jugador.delete()
+            if usuario:
+                TokenPassword.objects.filter(fk_id_usu=usuario).delete()
+                usuario.delete()
+            messages.success(request, "Jugador eliminado correctamente.")
+        except ProtectedError:
+            messages.error(request, "No se puede eliminar el jugador porque tiene registros protegidos.")
+        return redirect('list_jugadores')
+
+    
 
 
