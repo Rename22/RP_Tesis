@@ -602,14 +602,11 @@
           
           document.getElementById('edit_edad').value = edad;
       });
-  });
-
-  document.getElementById('formEditarJugador').addEventListener('submit', function(e) {
-    console.log('Enviando ID USUARIO:', document.getElementById('edit_id_usuario').value);
-    console.log('Enviando ID JUGADOR:', document.getElementById('edit_id_jugador').value);
-    console.log("Valor asignado a ID USUARIO:", modal.querySelector('#edit_id_usuario').value);
-    console.log("Valor asignado a ID JUGADOR:", modal.querySelector('#edit_id_jugador').value);
-});
+        document.getElementById('formEditarJugador').addEventListener('submit', function() {
+            console.log('Enviando ID USUARIO:', document.getElementById('edit_id_usuario').value);
+            console.log('Enviando ID JUGADOR:', document.getElementById('edit_id_jugador').value);
+        });
+    });
 
 
   </script>
