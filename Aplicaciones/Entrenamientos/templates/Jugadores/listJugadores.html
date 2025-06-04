@@ -571,16 +571,20 @@
     });
   </script>
   <script>
+    
+
+
     document.addEventListener('DOMContentLoaded', function () {
-        // Seleccionamos los campos de entrada en los formularios de Jugador
-        const inputs = document.querySelectorAll('#modalAgregarJugador input, #modalAgregarJugador textarea,' +
-                                                  '#modalEditarJugador input, #modalEditarJugador textarea');
+        // Convertir inputs a mayúsculas (excepto teléfono)
+        const inputs = document.querySelectorAll('#modalAgregarJugador input:not([type="email"]), #modalAgregarJugador textarea,' +
+                                                  '#modalEditarJugador input:not([type="email"]), #modalEditarJugador textarea');
     
         inputs.forEach(input => {
-            // Convertimos todo el texto a mayúsculas cuando se escribe
-            input.addEventListener('input', () => {
-                input.value = input.value.toUpperCase();
-            });
+            if (!['edit_telefono_ent', 'telefono_ent'].includes(input.id)) {
+                input.addEventListener('input', () => {
+                    input.value = input.value.toUpperCase();
+                });
+            }
         });
     });
   </script>
