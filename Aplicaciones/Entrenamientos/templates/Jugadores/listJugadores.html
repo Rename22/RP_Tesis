@@ -740,10 +740,9 @@
                                 return $("#edit_correo").val();
                             },
                             exclude_id: function() {
-                                const correoActual = $("#edit_correo").val();
-                                const correoOriginal = $("#edit_correo").data('original');
-                                if (correoActual === correoOriginal) return '';  // ❌ No validar si no ha cambiado
-                                return $("#edit_id_usuario").val();              // ✅ Validar si cambió
+                                // Enviamos siempre el ID del usuario para que el backend ignore su propio registro al validar la unicidad del correo.
+                                // Esto evita falsos positivos cuando el usuario no ha modificado el correo.
+                                return $("#edit_id_usuario").val();
                             }
                         }
                     }
