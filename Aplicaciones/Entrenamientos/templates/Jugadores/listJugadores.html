@@ -733,6 +733,8 @@
                     required: true,
                     email: true,
                     remote: {
+
+                      
                         url: "/validate_correo/",
                         type: "get",
                         data: {
@@ -742,6 +744,8 @@
                             exclude_id: function() {
 
                                 return $("#edit_id_usuario").val();
+
+                              
                             }
                         },
                         depends: function() {
@@ -761,14 +765,16 @@
                     minlength: 10,
                     maxlength: 10,
                     remote: {
-                        url: "/validate_cedula/",
-                        type: "get",
-                        data: {
-                            cedula_usu: function() {
-                                return $("#edit_cedula").val();
-                            },
-                            exclude_id: function() {
-                                return $("#edit_id_usuario").val();
+                        param: {
+                            url: "/validate_cedula/",
+                            type: "get",
+                            data: {
+                                cedula_usu: function() {
+                                    return $("#edit_cedula").val();
+                                },
+                                exclude_id: function() {
+                                    return $("#edit_id_usuario").val();
+                                }
                             }
                         },
                         depends: function() {
