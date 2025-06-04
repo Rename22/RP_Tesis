@@ -733,16 +733,21 @@
                     required: true,
                     email: true,
                     remote: {
-                        param: {
-                            url: "/validate_correo/",
-                            type: "get",
-                            data: {
-                                correo_usu: function() {
-                                    return $("#edit_correo").val();
-                                },
-                                exclude_id: function() {
-                                    return $("#edit_id_usuario").val();
-                                }
+
+
+                      
+                        url: "/validate_correo/",
+                        type: "get",
+                        data: {
+                            correo_usu: function() {
+                                return $("#edit_correo").val();
+                            },
+                            exclude_id: function() {
+
+                                return $("#edit_id_usuario").val();
+
+                              
+
                             }
                         },
                         depends: function() {
