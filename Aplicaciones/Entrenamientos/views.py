@@ -44,24 +44,30 @@ def CustomLogoutView(request):
 
 @require_GET
 def validate_cedula(request):
-    cedula = request.GET.get('cedula_usu', None)
-    exclude_id = request.GET.get('exclude_id', None)
+    cedula = request.GET.get('cedula_usu')
+    exclude_id = request.GET.get('exclude_id')
 
     qs = Usuario.objects.filter(cedula_usu=cedula)
     if exclude_id:
-        qs = qs.exclude(pk=exclude_id)
+        try:
+            qs = qs.exclude(pk=int(exclude_id))
+        except (TypeError, ValueError):
+            pass
 
     existe = qs.exists()
     return JsonResponse(not existe, safe=False)
 
 @require_GET
 def validate_correo(request):
-    correo = request.GET.get('correo_usu', None)
-    exclude_id = request.GET.get('exclude_id', None)
+    correo = request.GET.get('correo_usu')
+    exclude_id = request.GET.get('exclude_id')
 
     qs = Usuario.objects.filter(correo_usu=correo)
     if exclude_id:
-        qs = qs.exclude(pk=exclude_id)
+        try:
+            qs = qs.exclude(pk=int(exclude_id))
+        except (TypeError, ValueError):
+            pass
 
     existe = qs.exists()
     return JsonResponse(not existe, safe=False)
