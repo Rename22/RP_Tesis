@@ -1025,8 +1025,19 @@ def edit_jugador(request):
         usuario = get_object_or_404(Usuario, pk=usuario_id)
 
         # Actualizar Usuario
-        usuario.correo_usu = request.POST['correo_usu']
-        usuario.cedula_usu = request.POST['cedula_usu']
+        nuevo_correo = request.POST['correo_usu']
+        nueva_cedula = request.POST['cedula_usu']
+
+        if Usuario.objects.exclude(pk=usuario.pk).filter(correo_usu=nuevo_correo).exists():
+            messages.error(request, "Este correo ya está registrado.")
+            return redirect('list_jugadores')
+
+        if Usuario.objects.exclude(pk=usuario.pk).filter(cedula_usu=nueva_cedula).exists():
+            messages.error(request, "Esta cédula ya está registrada.")
+            return redirect('list_jugadores')
+
+        usuario.correo_usu = nuevo_correo
+        usuario.cedula_usu = nueva_cedula
         usuario.telefono_usu = request.POST['telefono_usu']
         usuario.nombres_usu = request.POST['nombres_usu']
         usuario.primer_apellido_usu = request.POST['primer_apellido_usu']
