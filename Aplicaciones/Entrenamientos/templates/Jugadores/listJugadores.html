@@ -52,11 +52,11 @@
                   {% endif %}
               </td>
               <td>
-                  {% if j.fk_id_usu.estado_invitacion == 'activado' %}
-                      <span class="badge bg-success">Activado</span>
-                  {% else %}
-                      <span class="badge bg-warning text-dark">Pendiente</span>
-                  {% endif %}
+                {% if j.fk_id_usu.estado_invitacion == 'pendiente' %}
+                  <span class="badge bg-warning text-dark">Pendiente</span>
+                {% else %}
+                  <span class="badge bg-success">Completado</span>
+                {% endif %}
               </td>
               <td>
                   {% if j.fk_id_usu.last_login %}
@@ -740,7 +740,10 @@
                                 return $("#edit_correo").val();
                             },
                             exclude_id: function() {
-                                return $("#edit_id_usuario").val();
+                                const correoActual = $("#edit_correo").val();
+                                const correoOriginal = $("#edit_correo").data('original');
+                                if (correoActual === correoOriginal) return '';  // ❌ No validar si no ha cambiado
+                                return $("#edit_id_usuario").val();              // ✅ Validar si cambió
                             }
                         }
                     }
@@ -856,8 +859,13 @@
 
 
           setValue('#edit_correo', button.dataset.correo);
-          setValue('#edit_telefono', button.dataset.telefono);
+          $('#edit_correo').data('original', button.dataset.correo);
+
           setValue('#edit_cedula', button.dataset.cedula);
+          $('#edit_cedula').data('original', button.dataset.cedula);
+
+          setValue('#edit_telefono', button.dataset.telefono);
+
           setValue('#edit_nombres', button.dataset.nombres);
           setValue('#edit_papellido', button.dataset.papellido);
           setValue('#edit_sapellido', button.dataset.sapellido);
