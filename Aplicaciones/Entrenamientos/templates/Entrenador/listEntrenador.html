@@ -68,22 +68,22 @@
               <td>
                 <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
                             data-bs-target="#modalEditarEntrenador"
-                            data-id="{{ u.id_usu }}"
-                            data-correo="{{ u.correo_usu }}"
-                            data-cedula="{{ u.cedula_usu }}"
-                            data-nombres="{{ u.nombres_usu }}"
-                            data-papellido="{{ u.primer_apellido_usu }}"
-                            data-sapellido="{{ u.segundo_apellido_usu }}"
-                            data-direccion="{{ u.direccion_usu }}"
-                            data-telefono="{{ u.telefono_usu }}"
-                            data-estado="{{ u.estado_usu }}"
-                            data-invitacion="{{ u.estado_invitacion }}"
+                            data-id="{{ entrenador.fk_id_usu.id_usu }}"
+                            data-correo="{{ entrenador.fk_id_usu.correo_usu }}"
+                            data-cedula="{{ entrenador.fk_id_usu.cedula_usu }}"
+                            data-nombres="{{ entrenador.fk_id_usu.nombres_usu }}"
+                            data-papellido="{{ entrenador.fk_id_usu.primer_apellido_usu }}"
+                            data-sapellido="{{ entrenador.fk_id_usu.segundo_apellido_usu }}"
+                            data-direccion="{{ entrenador.fk_id_usu.direccion_usu }}"
+                            data-telefono="{{ entrenador.fk_id_usu.telefono_usu }}"
+                            data-estado="{{ entrenador.fk_id_usu.estado_usu }}"
+                            data-invitacion="{{ entrenador.fk_id_usu.estado_invitacion }}"
                             title="Editar">
                         <i class="bi bi-pencil-square"></i>
                     </button>
                     <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
                             data-bs-target="#modalConfirmarEliminar"
-                            data-id="{{ u.id_usu }}"
+                            data-id="{{ entrenador.fk_id_usu.id_usu }}"
                             title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
