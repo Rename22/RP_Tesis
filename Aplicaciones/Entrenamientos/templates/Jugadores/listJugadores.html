@@ -21,6 +21,7 @@
             <th>Categoría</th>
             <th>Entrenador</th>
             <th>Estado</th>
+            <th>Invitación</th>
             <th>Último Acceso</th>
             <th>Acciones</th>
         </tr>
@@ -48,6 +49,13 @@
                       <span class="badge bg-success">Activo</span>
                   {% else %}
                       <span class="badge bg-secondary">Inactivo</span>
+                  {% endif %}
+              </td>
+              <td>
+                  {% if j.fk_id_usu.estado_invitacion == 'activado' %}
+                      <span class="badge bg-success">Activado</span>
+                  {% else %}
+                      <span class="badge bg-warning text-dark">Pendiente</span>
                   {% endif %}
               </td>
               <td>
@@ -82,12 +90,41 @@
                     data-equipo="{{ j.fk_id_equ.id|default:'' }}"
                     data-categoria="{{ j.fk_id_cat.id|default:'' }}"
                     data-entrenador="{{ j.fk_id_ent.id|default:'' }}"
-                    data-estado="{{ j.fk_id_usu.estado_usu }}">
+                    data-estado="{{ j.fk_id_usu.estado_usu }}"
+                    data-invitacion="{{ j.fk_id_usu.estado_invitacion }}"
+                    data-lastlogin="{{ j.fk_id_usu.last_login|date:'d/m/Y H:i'|default:'Nunca' }}">
                     <i class="bi bi-pencil-square"></i>
                 </button>
 
-                           
-                    
+                <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetallesJugador"
+                    data-id="{{ j.id }}"
+                    data-idusu="{{ j.fk_id_usu.id }}"
+                    data-correo="{{ j.fk_id_usu.correo_usu }}"
+                    data-telefono="{{ j.fk_id_usu.telefono_usu }}"
+                    data-cedula="{{ j.fk_id_usu.cedula_usu }}"
+                    data-nombres="{{ j.fk_id_usu.nombres_usu }}"
+                    data-papellido="{{ j.fk_id_usu.primer_apellido_usu }}"
+                    data-sapellido="{{ j.fk_id_usu.segundo_apellido_usu }}"
+                    data-direccion="{{ j.fk_id_usu.direccion_usu }}"
+                    data-fecha-nacimiento="{{ j.fecha_nacimiento_jug|date:'Y-m-d' }}"
+                    data-edad="{{ j.edad_jug }}"
+                    data-numero="{{ j.numero_jug }}"
+                    data-peso="{{ j.peso_jug|default:'' }}"
+                    data-altura="{{ j.altura_jug|default:'' }}"
+                    data-posicion="{{ j.posicion_jug }}"
+                    data-pie="{{ j.pie_dominante_jug }}"
+                    data-representante="{{ j.nombre_representante_jug }}"
+                    data-emergencia="{{ j.numero_emergencia_jug }}"
+                    data-fecha-ingreso="{{ j.fecha_ingreso_jug|date:'Y-m-d' }}"
+                    data-equipo="{{ j.fk_id_equ.nombre_equ|default:'' }}"
+                    data-categoria="{{ j.fk_id_cat.nombre_cat|default:'' }}"
+                    data-entrenador="{% if j.fk_id_ent and j.fk_id_ent.fk_id_usu %}{{ j.fk_id_ent.fk_id_usu.nombres_usu }} {{ j.fk_id_ent.fk_id_usu.primer_apellido_usu }}{% else %}No asignado{% endif %}"
+                    data-estado="{{ j.fk_id_usu.estado_usu }}"
+                    data-invitacion="{{ j.fk_id_usu.estado_invitacion }}"
+                    data-lastlogin="{{ j.fk_id_usu.last_login|date:'d/m/Y H:i'|default:'Nunca' }}">
+                    <i class="bi bi-eye"></i>
+                </button>
+
                     <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionJugador({{ j.id }})" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -403,6 +440,26 @@
 </div>
 
 
+
+<!-- MODAL DETALLES JUGADOR -->
+<div class="modal fade" id="modalDetallesJugador" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">Detalles del Jugador</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row" id="detalle_contenido">
+          <!-- Los datos se llenarán por JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
@@ -852,6 +909,41 @@
     });
 
 
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalDetalles = document.getElementById('modalDetallesJugador');
+        modalDetalles.addEventListener('show.bs.modal', function(event) {
+            const btn = event.relatedTarget;
+            const d = btn.dataset;
+            const contenido = modalDetalles.querySelector('#detalle_contenido');
+            contenido.innerHTML = `
+                <div class="col-md-6 mb-2"><strong>Correo:</strong> ${d.correo || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Cédula:</strong> ${d.cedula || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Teléfono:</strong> ${d.telefono || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Nombres:</strong> ${d.nombres || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Apellidos:</strong> ${d.papellido || ''} ${d.sapellido || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Dirección:</strong> ${d.direccion || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Fecha Nacimiento:</strong> ${d.fechaNacimiento || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Edad:</strong> ${d.edad || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Número:</strong> ${d.numero || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Peso:</strong> ${d.peso || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Altura:</strong> ${d.altura || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Posición:</strong> ${d.posicion || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Pie Dominante:</strong> ${d.pie || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Representante:</strong> ${d.representante || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Emergencia:</strong> ${d.emergencia || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Fecha Ingreso:</strong> ${d.fechaIngreso || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Equipo:</strong> ${d.equipo || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Categoría:</strong> ${d.categoria || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Entrenador:</strong> ${d.entrenador || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Estado:</strong> ${d.estado || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Invitación:</strong> ${d.invitacion || ''}</div>
+                <div class="col-md-6 mb-2"><strong>Último Acceso:</strong> ${d.lastlogin || ''}</div>
+            `;
+        });
+    });
   </script>
 
   <script>
