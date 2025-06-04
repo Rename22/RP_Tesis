@@ -1028,13 +1028,17 @@ def edit_jugador(request):
         nuevo_correo = request.POST['correo_usu']
         nueva_cedula = request.POST['cedula_usu']
 
-        if Usuario.objects.exclude(pk=usuario.pk).filter(correo_usu=nuevo_correo).exists():
-            messages.error(request, "Este correo ya está registrado.")
-            return redirect('list_jugadores')
+        # Solo verificar duplicados si se modificó el dato. Esto evita errores
+        # cuando el usuario intenta guardar sin cambiar su correo o cédula.
+        if nuevo_correo != usuario.correo_usu:
+            if Usuario.objects.exclude(pk=usuario.pk).filter(correo_usu=nuevo_correo).exists():
+                messages.error(request, "Este correo ya está registrado.")
+                return redirect('list_jugadores')
 
-        if Usuario.objects.exclude(pk=usuario.pk).filter(cedula_usu=nueva_cedula).exists():
-            messages.error(request, "Esta cédula ya está registrada.")
-            return redirect('list_jugadores')
+        if nueva_cedula != usuario.cedula_usu:
+            if Usuario.objects.exclude(pk=usuario.pk).filter(cedula_usu=nueva_cedula).exists():
+                messages.error(request, "Esta cédula ya está registrada.")
+                return redirect('list_jugadores')
 
         usuario.correo_usu = nuevo_correo
         usuario.cedula_usu = nueva_cedula
