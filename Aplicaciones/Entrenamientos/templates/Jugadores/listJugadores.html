@@ -740,10 +740,12 @@
                                 return $("#edit_correo").val();
                             },
                             exclude_id: function() {
-                                // Enviamos siempre el ID del usuario para que el backend ignore su propio registro al validar la unicidad del correo.
-                                // Esto evita falsos positivos cuando el usuario no ha modificado el correo.
+
                                 return $("#edit_id_usuario").val();
                             }
+                        },
+                        depends: function() {
+                            return $("#edit_correo").val() !== $("#edit_correo").data('original');
                         }
                     }
                 },
@@ -768,6 +770,9 @@
                             exclude_id: function() {
                                 return $("#edit_id_usuario").val();
                             }
+                        },
+                        depends: function() {
+                            return $("#edit_cedula").val() !== $("#edit_cedula").data('original');
                         }
                     }
                 },
@@ -853,7 +858,10 @@
   
           // Asignar valores a los campos
           setValue('#edit_id_jugador', button.dataset.id);
-          setValue('#edit_id_usuario', button.dataset.idusu);
+          // Obtener id del usuario con distintos posibles formatos en data-
+          // attributes por compatibilidad con versiones anteriores
+          const idUsuario = button.dataset.idusu || button.dataset.idUsuario || button.getAttribute('data-idusu');
+          setValue('#edit_id_usuario', idUsuario);
 
 
 
