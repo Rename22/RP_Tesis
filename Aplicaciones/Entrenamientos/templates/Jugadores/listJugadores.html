@@ -734,6 +734,7 @@
                     email: true,
                     remote: {
 
+
                       
                         url: "/validate_correo/",
                         type: "get",
@@ -746,6 +747,7 @@
                                 return $("#edit_id_usuario").val();
 
                               
+
                             }
                         },
                         depends: function() {
@@ -943,10 +945,6 @@
           
           document.getElementById('edit_edad').value = edad;
       });
-        document.getElementById('formEditarJugador').addEventListener('submit', function() {
-            console.log('Enviando ID USUARIO:', document.getElementById('edit_id_usuario').value);
-            console.log('Enviando ID JUGADOR:', document.getElementById('edit_id_jugador').value);
-        });
     });
 
 
