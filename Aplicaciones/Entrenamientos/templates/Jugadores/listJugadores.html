@@ -733,18 +733,20 @@
                     required: true,
                     email: true,
                     remote: {
-                        url: "/validate_correo/",
-                        type: "get",
-                        data: {
-                            correo_usu: function() {
-                                return $("#edit_correo").val();
-                            },
-                            exclude_id: function() {
-                                const correoActual = $("#edit_correo").val();
-                                const correoOriginal = $("#edit_correo").data('original');
-                                if (correoActual === correoOriginal) return '';  // ❌ No validar si no ha cambiado
-                                return $("#edit_id_usuario").val();              // ✅ Validar si cambió
+                        param: {
+                            url: "/validate_correo/",
+                            type: "get",
+                            data: {
+                                correo_usu: function() {
+                                    return $("#edit_correo").val();
+                                },
+                                exclude_id: function() {
+                                    return $("#edit_id_usuario").val();
+                                }
                             }
+                        },
+                        depends: function() {
+                            return $("#edit_correo").val() !== $("#edit_correo").data('original');
                         }
                     }
                 },
@@ -760,15 +762,20 @@
                     minlength: 10,
                     maxlength: 10,
                     remote: {
-                        url: "/validate_cedula/",
-                        type: "get",
-                        data: {
-                            cedula_usu: function() {
-                                return $("#edit_cedula").val();
-                            },
-                            exclude_id: function() {
-                                return $("#edit_id_usuario").val();
+                        param: {
+                            url: "/validate_cedula/",
+                            type: "get",
+                            data: {
+                                cedula_usu: function() {
+                                    return $("#edit_cedula").val();
+                                },
+                                exclude_id: function() {
+                                    return $("#edit_id_usuario").val();
+                                }
                             }
+                        },
+                        depends: function() {
+                            return $("#edit_cedula").val() !== $("#edit_cedula").data('original');
                         }
                     }
                 },
@@ -854,7 +861,10 @@
   
           // Asignar valores a los campos
           setValue('#edit_id_jugador', button.dataset.id);
-          setValue('#edit_id_usuario', button.dataset.idusu);
+          // Obtener id del usuario con distintos posibles formatos en data-
+          // attributes por compatibilidad con versiones anteriores
+          const idUsuario = button.dataset.idusu || button.dataset.idUsuario || button.getAttribute('data-idusu');
+          setValue('#edit_id_usuario', idUsuario);
 
 
 
@@ -930,10 +940,6 @@
           
           document.getElementById('edit_edad').value = edad;
       });
-        document.getElementById('formEditarJugador').addEventListener('submit', function() {
-            console.log('Enviando ID USUARIO:', document.getElementById('edit_id_usuario').value);
-            console.log('Enviando ID JUGADOR:', document.getElementById('edit_id_jugador').value);
-        });
     });
 
 
