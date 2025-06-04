@@ -2,7 +2,7 @@
 {% block title %}Lista de Jugadores{% endblock %}
 
 {% block content %}
-<div class="table-responsive">
+<div class="container mt-5">
     <h2 class="text-center">Lista de Jugadores</h2>
     <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarJugador">
         Crear Nuevo Jugador
@@ -527,6 +527,8 @@
     $(document).ready(function () {
         // Inicializar DataTable para la tabla de Categorías
         $('#tbl_jugadores').DataTable({
+          scrollX: true,
+          responsive: true,
           dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
               '<"row"<"col-12"tr>>' +
               '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
@@ -565,6 +567,20 @@
           language: {
               url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
           }
+        });
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Seleccionamos los campos de entrada en los formularios de Jugador
+        const inputs = document.querySelectorAll('#modalAgregarJugador input, #modalAgregarJugador textarea,' +
+                                                  '#modalEditarJugador input, #modalEditarJugador textarea');
+    
+        inputs.forEach(input => {
+            // Convertimos todo el texto a mayúsculas cuando se escribe
+            input.addEventListener('input', () => {
+                input.value = input.value.toUpperCase();
+            });
         });
     });
   </script>
