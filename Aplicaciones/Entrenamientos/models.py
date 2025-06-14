@@ -97,7 +97,7 @@ class Equipo(models.Model):
 
 
 class Entrenador(models.Model):
-    fk_id_usu = models.ForeignKey(Usuario, on_delete=models.RESTRICT, blank=True, null=True)
+    fk_id_usu = models.ForeignKey(Usuario, on_delete=models.RESTRICT, blank=True, null=True, related_name='entrenador' )
     fecha_creacion_ent = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion_ent = models.DateTimeField(blank=True, null=True)
 
@@ -119,16 +119,29 @@ class Jugador(models.Model):
     fecha_creacion_jug = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion_jug = models.DateTimeField(blank=True, null=True)
 
-class Evaluacion(models.Model):
-    nombre_eva = models.CharField(max_length=100, blank=True, null=True)
-    descripcion_eva = models.TextField(blank=True, null=True)
-    fecha_creacion_eva = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion_eva = models.DateTimeField(blank=True, null=True)
+class TipoEvaluacion(models.Model):
+    nombre_tip = models.CharField(max_length=100, blank=True, null=True)  # Nombre del tipo de evaluación (Ej. Física, Táctica)
+    descripcion_tip = models.TextField(blank=True, null=True)  # Descripción del tipo de evaluación
+    estado_tip = models.BooleanField(default=True)  # Estado booleano para activar/desactivar la evaluación
+    fecha_creacion_tip = models.DateTimeField(auto_now_add=True)  # Fecha de creación
+    fecha_actualizacion_tip = models.DateTimeField(blank=True, null=True)  # Fecha de actualización
+
+    
+class ParametroEvaluacion(models.Model):
+    nombre_prm = models.CharField(max_length=100, blank=True, null=True)  # Nombre del parámetro de evaluación (Ej. Control de balón)
+    descripcion_prm = models.TextField(blank=True, null=True)  # Descripción del parámetro
+    fk_tipo_evaluacion = models.ForeignKey(TipoEvaluacion, on_delete=models.CASCADE)  # Relación con TipoEvaluacion
+    estado_prm = models.BooleanField(default=True)  # Estado booleano para activar/desactivar el parámetro
+    fecha_creacion_prm = models.DateTimeField(auto_now_add=True)  # Fecha de creación
+    fecha_actualizacion_prm = models.DateTimeField(blank=True, null=True)  # Fecha de actualización
+
+
+
 
 class Prueba(models.Model):
     fk_id_ent = models.ForeignKey(Entrenador, on_delete=models.RESTRICT, blank=True, null=True)
     fk_id_jug = models.ForeignKey(Jugador, on_delete=models.RESTRICT, blank=True, null=True)
-    fk_id_eva = models.ForeignKey(Evaluacion, on_delete=models.RESTRICT, blank=True, null=True)
+    fk_id_tip = models.ForeignKey(TipoEvaluacion, on_delete=models.RESTRICT, blank=True, null=True)
     macro_pru = models.CharField(max_length=10, blank=True, null=True)
     observaciones_pru = models.TextField(blank=True, null=True)
     fecha_pru = models.DateField(blank=True, null=True)
@@ -137,10 +150,11 @@ class Prueba(models.Model):
 
 class DetallePrueba(models.Model):
     fk_id_pru = models.ForeignKey(Prueba, on_delete=models.RESTRICT, blank=True, null=True)
-    titulo_det = models.CharField(max_length=100, blank=True, null=True)
-    valoracion_det = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    fk_id_parametro = models.ForeignKey(ParametroEvaluacion, on_delete=models.RESTRICT, blank=True, null=True)  # Relación con los parámetros de evaluación
+    valoracion_det = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # Valoración para ese parámetro específico
     fecha_creacion_det = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion_det = models.DateTimeField(blank=True, null=True)
+
 
 class ResultadoMacro(models.Model):
     fk_id_jug = models.ForeignKey(Jugador, on_delete=models.RESTRICT, blank=True, null=True)

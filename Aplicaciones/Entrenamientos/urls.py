@@ -57,6 +57,18 @@ urlpatterns = [
     path('jugadores/editar/', views.edit_jugador, name='edit_jugador'),
     path('jugadores/delete/<int:pk>/', views.delete_jugador, name='delete_jugador'),
 
+    # -------------------------------CRUD EVALUACIONES-----------------------------
+    path('tipos_evaluaciones/', views.list_tipoevaluaciones, name='list_tipoevaluaciones'),
+    path('tipos_evaluaciones/add/', views.add_tipoevaluacion, name='add_tipoevaluacion'),
+    path('api/get_parametros/<int:evaluacion_id>/', views.get_parametros, name='get_parametros'),
+    path('tipos_evaluaciones/edit/<int:pk>/', views.edit_tipoevaluacion, name='edit_tipoevaluacion'),
+    path('tipos_evaluaciones/delete/<int:pk>/', views.delete_tipoevaluacion, name='delete_tipoevaluacion'),
     
+    # -------------------------------CRUD PRUEBAS-----------------------------
+    path('pruebas/', views.list_pruebas, name='list_pruebas'),
+    path('pruebas/add/', views.add_prueba, name='add_prueba'),
+    path('pruebas/edit/<int:pk>/', views.edit_prueba, name='edit_prueba'),
+
+    path('pruebas/delete/<int:pk>/', views.delete_prueba, name='delete_prueba'),
 
 ]

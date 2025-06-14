@@ -1,0 +1,519 @@
+{% extends 'index.html' %}
+
+{% block title %}Lista de Tipos de Evaluación{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Lista de Tipos de Evaluación</h2>
+    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarEvaluacion">
+        Crear Nueva Evaluación
+    </button>
+
+    <table id="tbl_tipoevaluaciones" class="table table-bordered table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Fecha de Creación</th>
+                <th>Fecha de Actualización</th>
+                <th>Parámetros</th>  <!-- Nueva columna para mostrar los parámetros -->
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tipo in tipos_evaluacion %}
+            <tr>
+                <td>{{ tipo.id }}</td>
+                <td>{{ tipo.nombre_tip }}</td>
+                <td>{{ tipo.descripcion_tip }}</td>
+                <td>{{ tipo.fecha_creacion_tip|date:"d/m/Y H:i" }}</td>
+                <td>{{ tipo.fecha_actualizacion_tip|date:"d/m/Y H:i" }}</td>
+                
+                <!-- Mostrar los parámetros de cada tipo de evaluación en una columna separada -->
+                <td>
+                    <ul>
+                        {% for parametro in tipo.parametroevaluacion_set.all %}
+                            <li>{{ parametro.nombre_prm }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+
+                <td>
+                    {% with parametros=tipo.parametroevaluacion_set.all %}
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#modalEditarTipoEvaluacion"
+                            data-id="{{ tipo.id }}"
+                            data-nombre="{{ tipo.nombre_tip }}"
+                            data-descripcion="{{ tipo.descripcion_tip }}"
+                            data-parametros='[
+                                {% for param in tipo.parametroevaluacion_set.all %}
+                                    {"id": "{{ param.id }}", "titulo": "{{ param.nombre_prm|escapejs }}", "descripcion": "{{ param.descripcion_prm|escapejs }}"}
+                                    {% if not forloop.last %},{% endif %}
+                                {% endfor %}
+                            ]'>
+                        <i title="Editar" class="bi bi-pencil-square"></i>
+                    </button>
+                    {% endwith %}
+                
+                    <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionTipoEvaluacion({{ tipo.id }})" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <form id="form-eliminar-tipoevaluacion-{{ tipo.id }}" method="POST" action="{% url 'delete_tipoevaluacion' tipo.id %}">
+                        {% csrf_token %}
+                    </form>
+                </td>
+                
+                
+                
+                
+                
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL AGREGAR TIPO DE EVALUACION -->
+<div class="modal fade" id="modalAgregarEvaluacion" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'add_tipoevaluacion' %}" onsubmit="return validarFormulario()">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Registrar Nuevo Tipo de Evaluación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre_tip">Nombre del Tipo de Evaluación</label>
+                            <input type="text" name="nombre_tip" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="descripcion_tip">Descripción</label>
+                            <textarea name="descripcion_tip" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h5 class="text-center">Parámetros de Evaluación</h5>
+
+                    <!-- Contenedor de parámetros -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="detalleTabla">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Descripción</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalleBody">
+                                <tr>
+                                    <td><input type="text" name="titulo_det[]" class="form-control" required></td>
+                                    <td><textarea name="descripcion_det[]" class="form-control" rows="2"></textarea></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="agregarFila()">
+                            <i class="bi bi-plus-circle"></i> Agregar Parámetro
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // Función para agregar dinámicamente más parámetros
+    function agregarFila() {
+        const fila = `
+        <tr>
+            <td><input type="text" name="titulo_det[]" class="form-control" required></td>
+            <td><textarea name="descripcion_det[]" class="form-control" rows="2"></textarea></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+        document.getElementById('detalleBody').insertAdjacentHTML('beforeend', fila);
+    }
+
+    // Función para eliminar una fila
+    function eliminarFila(button) {
+        button.closest('tr').remove();
+    }
+
+    // Función para validar el formulario antes de enviarlo
+    function validarFormulario() {
+        const descripcion = document.querySelector('textarea[name="descripcion_tip"]');
+        if (!descripcion.value.trim()) {
+            descripcion.value = "SIN DESCRIPCIÓN"; // Asigna el valor por defecto si está vacío
+        }
+
+        // Realiza la misma verificación para los parámetros
+        const descripcionParametros = document.getElementsByName('descripcion_det[]');
+        descripcionParametros.forEach(function (desc) {
+            if (!desc.value.trim()) {
+                desc.value = "SIN DESCRIPCIÓN";
+            }
+        });
+
+        return true; // Continúa con el envío del formulario
+    }
+</script>
+
+
+<!-- MODAL EDITAR TIPO DE EVALUACION -->
+<div class="modal fade" id="modalEditarTipoEvaluacion" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="POST" id="formEditarTipoEvaluacion">
+                {% csrf_token %}
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Editar Tipo de Evaluación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id_tipoevaluacion" id="edit_id_tipoevaluacion">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_nombre_tip">Nombre del Tipo de Evaluación</label>
+                            <input type="text" name="nombre_tip" id="edit_nombre_tip" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_descripcion_tip">Descripción</label>
+                            <textarea name="descripcion_tip" id="edit_descripcion_tip" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h5>Parámetros de Evaluación</h5>
+                    <table class="table table-bordered" id="tablaEditarParametros">
+                        <thead>
+                            <tr>
+                                <th>Parámetro</th>
+                                <th>Descripción</th>
+                                <th style="width: 40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyEditarParametros">
+                            <!-- Las filas se inyectarán aquí -->
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="agregarFilaEditar()">+ Agregar Parámetro</button>
+
+                    <!-- Mensaje de advertencia si intentan eliminar la última fila -->
+                    <div id="mensajeAdvertencia" class="alert alert-danger mt-2" style="display: none;">
+                        <strong>¡Atención!</strong> Debe haber al menos un parámetro.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning">Actualizar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Función CORREGIDA para agregar parámetros en edición (incluye IDs)
+    function agregarFilaEditar(titulo = '', descripcion = '', id = '') {
+        const safeId = (id && !isNaN(id)) ? id : '';
+        const fila = `
+        <tr>
+            <td><input type="text" name="titulo_det[]" class="form-control" value="${titulo}" required></td>
+            <td><textarea name="descripcion_det[]" class="form-control" rows="2">${descripcion}</textarea></td>
+            <td class="text-center">
+                <input type="hidden" name="detalle_id[]" value="${safeId}">
+                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+        document.getElementById('tbodyEditarParametros').insertAdjacentHTML('beforeend', fila);
+    }
+
+    // Función para eliminar una fila
+    function eliminarFila(button) {
+        const tbody = document.getElementById('tbodyEditarParametros');
+        
+        // Verificar si es la última fila
+        if (tbody.rows.length > 1) {
+            button.closest('tr').remove(); // Eliminar la fila
+            document.getElementById('mensajeAdvertencia').style.display = 'none'; // Ocultar el mensaje de advertencia
+        } else {
+            // Mostrar el mensaje de advertencia si es la última fila
+            document.getElementById('mensajeAdvertencia').style.display = 'block';
+        }
+    }
+
+    // Cargar datos en el modal de edición
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalEditar = document.getElementById('modalEditarTipoEvaluacion');
+        modalEditar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            
+            // Establecer valores del formulario
+            document.getElementById('formEditarTipoEvaluacion').action = `/tipos_evaluaciones/edit/${button.dataset.id}/`;
+            document.getElementById('edit_id_tipoevaluacion').value = button.dataset.id;
+            document.getElementById('edit_nombre_tip').value = button.dataset.nombre;
+            document.getElementById('edit_descripcion_tip').value = button.dataset.descripcion;
+
+            // Cargar parámetros
+            const tbody = document.getElementById('tbodyEditarParametros');
+            tbody.innerHTML = '';
+
+            try {
+                const parametros = JSON.parse(button.dataset.parametros || '[]');
+                parametros.forEach(parametro => 
+                    agregarFilaEditar(
+                        parametro.titulo, 
+                        parametro.descripcion, 
+                        parametro.id
+                    )
+                );
+            } catch (error) {
+                console.error("Error al parsear parámetros:", error);
+            }
+        });
+    });
+
+    // Asegurarse de que "SIN DESCRIPCIÓN" se agregue si el campo descripción está vacío
+    document.addEventListener('submit', function (event) {
+        const descripcionInputs = document.querySelectorAll('textarea[name="descripcion_det[]"]');
+        descripcionInputs.forEach(function (input) {
+            if (!input.value.trim()) {
+                input.value = "SIN DESCRIPCIÓN";  // Si está vacío, asignar "SIN DESCRIPCIÓN"
+            }
+        });
+    });
+</script>
+
+
+
+
+  
+  <script>
+    $(document).ready(function () {
+        // Inicializar DataTable para la tabla de Evaluaciones
+        $('#tbl_tipoevaluaciones').DataTable({
+            dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+                '<"row"<"col-12"tr>>' +
+                '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+            buttons: [
+                {
+                    extend: 'copyHtml5',
+                    text: '<i class="bi bi-clipboard"></i> Copiar',
+                    className: 'btn btn-secondary btn-sm',
+                    exportOptions: { columns: ':not(:last-child)' }
+                },
+                {
+                    extend: 'excelHtml5',
+                    text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                    className: 'btn btn-success btn-sm',
+                    exportOptions: { columns: ':not(:last-child)' }
+                },
+                {
+                    extend: 'csvHtml5',
+                    text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                    className: 'btn btn-info btn-sm',
+                    exportOptions: { columns: ':not(:last-child)' }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                    className: 'btn btn-danger btn-sm',
+                    exportOptions: { columns: ':not(:last-child)' }
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="bi bi-printer"></i> Imprimir',
+                    className: 'btn btn-primary btn-sm',
+                    exportOptions: { columns: ':not(:last-child)' }
+                }
+            ],
+            language: {
+                url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+            }
+        });
+    });
+</script>
+
+<script>
+    // Confirmar eliminación con iziToast para tipo de evaluación
+    function confirmarEliminacionTipoEvaluacion(id) {
+        iziToast.question({
+            timeout: 3000,
+            close: false,
+            overlay: true,
+            displayMode: 'once',
+            title: '¿Estás seguro?',
+            message: 'Esta acción eliminará el tipo de evaluación de forma permanente.',
+            position: 'center',
+            buttons: [
+                ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
+                    // Enviar el formulario de eliminación
+                    document.getElementById('form-eliminar-tipoevaluacion-' + id).submit();
+                    instance.hide({}, toast);
+                }, true],
+                ['<button>Cancelar</button>', function (instance, toast) {
+                    instance.hide({}, toast);
+                }]
+            ]
+        });
+    }
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Seleccionamos los campos de entrada en los formularios de evaluación
+    const inputs = document.querySelectorAll('#modalAgregarEvaluacion input, #modalAgregarEvaluacion textarea,' +
+                                              '#modalEditarTipoEvaluacion input, #modalEditarTipoEvaluacion textarea');
+    
+    // Convertimos todo el texto a mayúsculas cuando se escribe
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            input.value = input.value.toUpperCase();
+        });
+    });
+
+    // Delegamos el evento para los parámetros, para que afecte a los campos generados dinámicamente
+    document.querySelector('#tablaEditarParametros').addEventListener('input', function(e) {
+        if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) {
+            e.target.value = e.target.value.toUpperCase();
+        }
+    });
+});
+
+
+
+
+    
+</script>
+
+
+<script>
+    $(document).ready(function () {
+    // Validar formulario CREAR TIPO DE EVALUACION
+    $("#modalAgregarEvaluacion form").validate({
+        errorClass: 'is-invalid',
+        validClass: 'is-valid',
+        errorElement: 'div',
+        errorPlacement: function (error, element) {
+            error.addClass('invalid-feedback');
+            error.insertAfter(element);
+        },
+        rules: {
+            nombre_tip: {
+                required: true,
+                minlength: 3
+            },
+            descripcion_tip: {
+                required: true,
+                minlength: 5
+            },
+            'titulo_det[]': {
+                required: true,
+                minlength: 1 // Al menos un parámetro debe ser agregado
+            },
+            'descripcion_det[]': {
+                required: true
+            }
+        },
+        messages: {
+            nombre_tip: {
+                required: "El nombre del tipo de evaluación es obligatorio.",
+                minlength: "Debe tener al menos 3 caracteres."
+            },
+            descripcion_tip: {
+                required: "La descripción es obligatoria.",
+                minlength: "Debe tener al menos 5 caracteres."
+            },
+            'titulo_det[]': {
+                required: "Debe agregar al menos un parámetro.",
+                minlength: "Debe tener al menos un parámetro."
+            },
+            'descripcion_det[]': {
+                required: "La descripción del parámetro es obligatoria."
+            }
+        },
+        submitHandler: function(form) {
+            // Solo permitir el envío del formulario si los parámetros han sido agregados
+            const parametros = document.querySelectorAll('input[name="titulo_det[]"]').length;
+            if (parametros > 0) {
+                form.submit();
+            } else {
+                alert('Debe agregar al menos un parámetro para poder guardar el tipo de evaluación.');
+            }
+        }
+    });
+});
+
+    
+</script>
+
+<script>
+    $(document).ready(function () {
+    // Validar formulario EDITAR TIPO DE EVALUACION
+    $("#formEditarTipoEvaluacion").validate({
+        errorClass: 'is-invalid',
+        validClass: 'is-valid',
+        errorElement: 'div',
+        errorPlacement: function (error, element) {
+            error.addClass('invalid-feedback');
+            error.insertAfter(element);
+        },
+        rules: {
+            nombre_tip: {
+                required: true,
+                minlength: 3
+            },
+            'titulo_det[]': {
+                required: true,
+                minlength: 1 // Al menos un parámetro debe ser agregado
+            },
+        },
+        messages: {
+            nombre_tip: {
+                required: "El nombre del tipo de evaluación es obligatorio.",
+                minlength: "Debe tener al menos 3 caracteres."
+            },
+            'titulo_det[]': {
+                required: "Debe agregar al menos un parámetro.",
+                minlength: "Debe tener al menos un parámetro."
+            },
+        },
+        submitHandler: function(form) {
+            // Solo permitir el envío del formulario si los parámetros han sido agregados
+            const parametros = document.querySelectorAll('input[name="titulo_det[]"]').length;
+            if (parametros > 0) {
+                form.submit();
+            } else {
+                alert('Debe agregar al menos un parámetro para poder actualizar el tipo de evaluación.');
+            }
+        }
+    });
+});
+
+    
+</script>
+
+{% endblock %}

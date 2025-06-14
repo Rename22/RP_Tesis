@@ -7,7 +7,7 @@ from django.core.mail import EmailMessage
 from django.urls import reverse
 from django.db.models import ProtectedError
 from django.contrib import messages
-from .models import Usuario, TokenPassword, Categoria, Temporada, Equipo, Entrenador, Jugador
+from .models import Usuario, TokenPassword, Categoria, Temporada, Equipo, Entrenador, Jugador, TipoEvaluacion, ParametroEvaluacion, Prueba, DetallePrueba
 from django.utils import timezone
 from django.db.models import Q
 import pytz
@@ -875,7 +875,13 @@ def add_jugador(request):
         
     equipos = Equipo.objects.prefetch_related('categorias').all()
     categorias = Categoria.objects.all()
-    entrenadores = Entrenador.objects.select_related('fk_id_usu').all()
+    entrenador = Entrenador.objects.filter(fk_id_usu=request.user).first()
+    if not entrenador:
+        messages.error(request, "Este usuario no está registrado como entrenador.")
+        return redirect('list_jugadores')
+
+    fk_id_ent_id = entrenador.id
+
 
     if request.method == 'POST':
         correo     = request.POST['correo_usu']
@@ -903,7 +909,7 @@ def add_jugador(request):
 
         # Si es entrenador, se asigna a sí mismo. Si es admin, se selecciona desde el formulario
         if request.user.rol_usu == 'entrenador':
-            fk_id_ent_id = request.user.entrenador.id
+            fk_id_ent_id = fk_id_ent_id
         else:
             fk_id_ent_id = request.POST.get('fk_id_ent', None)
 
@@ -1097,5 +1103,289 @@ def delete_jugador(request, pk):
         return redirect('list_jugadores')
 
     
+# -------------------------------CRUD TIPO EVALUACION-------------------------------
+#listar
+@login_required
+def list_tipoevaluaciones(request):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.warning(request, "No tienes permiso para acceder aquí.")
+        return redirect('admin_dashboard')
+
+    # Obtener todos los tipos de evaluación
+    tipos_evaluacion = TipoEvaluacion.objects.all()
+
+    # Obtener todos los parámetros asociados a cada tipo de evaluación
+    # Se obtiene usando el campo fk_tipo_evaluacion de ParametroEvaluacion
+    parametros_evaluacion = ParametroEvaluacion.objects.all()
+
+    return render(request, 'TipoEvaluacion/listTipoEvaluaciones.html', {
+        'tipos_evaluacion': tipos_evaluacion,
+        'parametros_evaluacion': parametros_evaluacion
+    })
+
+@login_required
+def add_tipoevaluacion(request):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para crear tipos de evaluación.")
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        nombre_tip = request.POST['nombre_tip']
+        descripcion_tip = request.POST.get('descripcion_tip', '').strip()
+        fecha_creacion_tip = timezone.now()
+
+        # Si la descripción está vacía, asignar el valor por defecto
+        if not descripcion_tip:
+            descripcion_tip = "SIN DESCRIPCIÓN"
+
+        tipo_evaluacion = TipoEvaluacion(
+            nombre_tip=nombre_tip,
+            descripcion_tip=descripcion_tip,
+            fecha_creacion_tip=fecha_creacion_tip
+        )
+        tipo_evaluacion.save()
+
+        # Ahora agregamos los parámetros para este tipo de evaluación
+        titulos = request.POST.getlist('titulo_det[]')
+        descripcion = request.POST.getlist('descripcion_det[]')
+
+        # Recorremos los parámetros y guardamos o actualizamos
+        for titulo, desc in zip(titulos, descripcion):
+            if titulo.strip() and desc.strip():
+                # Si el campo de descripción está vacío, asignamos el valor por defecto
+                if not desc.strip():
+                    desc = "SIN DESCRIPCIÓN"
+
+                ParametroEvaluacion.objects.create(
+                    nombre_prm=titulo.strip(),
+                    descripcion_prm=desc.strip(),
+                    fk_tipo_evaluacion=tipo_evaluacion,
+                    fecha_creacion_prm=timezone.now()
+                )
+
+        messages.success(request, f"Tipo de Evaluación '{nombre_tip}' y sus parámetros fueron creados exitosamente.")
+        return redirect('list_tipoevaluaciones')
+
+    return redirect('list_tipoevaluaciones')
+@login_required
+def edit_tipoevaluacion(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para editar tipos de evaluación.")
+        return redirect('list_tipoevaluaciones')
+
+    tipo_evaluacion = get_object_or_404(TipoEvaluacion, pk=pk)
+
+    if request.method == 'POST':
+        try:
+            # Actualizar tipo de evaluación
+            tipo_evaluacion.nombre_tip = request.POST['nombre_tip']
+            
+            # Si no se ingresa una descripción, poner "SIN DESCRIPCIÓN"
+            tipo_evaluacion.descripcion_tip = request.POST.get('descripcion_tip', '').strip() or "SIN DESCRIPCIÓN"
+            
+            tipo_evaluacion.fecha_actualizacion_tip = timezone.now()
+            tipo_evaluacion.save()
+
+            # Obtener parámetros del formulario
+            titulos = request.POST.getlist('titulo_det[]')
+            descripciones = request.POST.getlist('descripcion_det[]')
+            ids_parametros = request.POST.getlist('detalle_id[]')
+            
+            # Procesar parámetros existentes
+            parametros_existentes = ParametroEvaluacion.objects.filter(fk_tipo_evaluacion=tipo_evaluacion)
+            ids_existentes = [str(p.id) for p in parametros_existentes]
+            
+            # Identificar parámetros a eliminar
+            ids_eliminar = set(ids_existentes) - set(ids_parametros)
+            if ids_eliminar:
+                ParametroEvaluacion.objects.filter(id__in=ids_eliminar).delete()
+            
+            # Actualizar/crear parámetros
+            for i in range(len(titulos)):
+                titulo = titulos[i].strip()
+                descripcion = descripciones[i].strip() or "SIN DESCRIPCIÓN"  # Si la descripción está vacía, poner "SIN DESCRIPCIÓN"
+                param_id = ids_parametros[i]
+                
+                if not titulo:
+                    continue  # Si no se ha ingresado un título, no procesamos ese parámetro
+                
+                if param_id and param_id != '':  # Actualizar existente
+                    parametro = ParametroEvaluacion.objects.filter(
+                        id=param_id, 
+                        fk_tipo_evaluacion=tipo_evaluacion
+                    ).first()
+                    if parametro:
+                        parametro.nombre_prm = titulo
+                        parametro.descripcion_prm = descripcion
+                        parametro.fecha_actualizacion_prm = timezone.now()
+                        parametro.save()
+                else:  # Crear nuevo
+                    ParametroEvaluacion.objects.create(
+                        fk_tipo_evaluacion=tipo_evaluacion,
+                        nombre_prm=titulo,
+                        descripcion_prm=descripcion,
+                        fecha_creacion_prm=timezone.now()
+                    )
+
+            messages.success(request, "Tipo de Evaluación actualizado correctamente.")
+        except Exception as e:
+            messages.error(request, f"Error al actualizar: {str(e)}")
+
+    return redirect('list_tipoevaluaciones')
 
 
+
+# Eliminar tipo de evaluación
+@login_required
+def delete_tipoevaluacion(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para esta acción.")
+        return redirect('list_tipoevaluaciones')
+
+    if request.method == 'POST':
+        try:
+            tipo = get_object_or_404(TipoEvaluacion, pk=pk)
+            tipo.delete()
+            messages.success(request, "Tipo de Evaluación eliminado correctamente.")
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+    return redirect('list_tipoevaluaciones')
+
+
+
+# -------------------------------CRUD PRUEBAS-------------------------------
+@login_required
+def list_pruebas(request):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.warning(request, "No tienes permiso para acceder aquí.")
+        return redirect('admin_dashboard')
+
+    pruebas = Prueba.objects.select_related('fk_id_jug__fk_id_usu', 'fk_id_tip').all()
+    jugadores = Jugador.objects.select_related('fk_id_usu').all()
+    evaluaciones = TipoEvaluacion.objects.all()  # Cargar tipos de evaluación (no Evaluacion)
+    hoy = timezone.now().date()
+
+    return render(request, 'Prueba/listPrueba.html', {
+        'pruebas': pruebas,
+        'jugadores': jugadores,
+        'evaluaciones': evaluaciones,  # Ahora estamos pasando los tipos de evaluación
+        'hoy': hoy
+    })
+
+
+@login_required
+def add_prueba(request):
+    if request.user.rol_usu not in ['admin_dios', 'entrenador']:
+        messages.error(request, "No tienes permiso para crear pruebas.")
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        try:
+            entrenador = Entrenador.objects.get(fk_id_usu=request.user)
+
+            # Crear la prueba
+            prueba = Prueba.objects.create(
+                fk_id_ent=entrenador,
+                fk_id_jug_id=request.POST['fk_id_jug'],
+                fk_id_tip_id=request.POST['fk_id_eva'],
+                macro_pru=request.POST.get('macro_pru', '').strip(),
+                observaciones_pru=request.POST.get('observaciones_pru', '').strip() or "SIN OBSERVACIONES",
+                fecha_pru=request.POST.get('fecha_pru'),
+                fecha_creacion_pru=timezone.now()
+            )
+
+            # Capturar los detalles de los parámetros
+            parametro_ids = request.POST.getlist('parametro_id[]')  # Lista de IDs de parámetros seleccionados
+            valoraciones = request.POST.getlist('valoracion_det[]')  # Lista de valoraciones
+
+            for parametro_id, valoracion in zip(parametro_ids, valoraciones):
+                if parametro_id and valoracion.strip():
+                    parametro = ParametroEvaluacion.objects.get(id=parametro_id)
+                    DetallePrueba.objects.create(
+                        fk_id_pru=prueba,
+                        fk_id_parametro=parametro,
+                        valoracion_det=valoracion.strip(),
+                        fecha_creacion_det=timezone.now()
+                    )
+
+            messages.success(request, "Prueba y detalles registrados exitosamente.")
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error al registrar la prueba: {e}")
+
+    return redirect('list_pruebas')
+
+
+@login_required
+def get_parametros(request, evaluacion_id):
+    parametros = ParametroEvaluacion.objects.filter(fk_tipo_evaluacion_id=evaluacion_id)
+    parametros_data = [
+        {"id": parametro.id, "titulo": parametro.nombre_prm}
+        for parametro in parametros
+    ]
+    return JsonResponse(parametros_data, safe=False)
+
+
+
+
+
+
+@login_required
+def edit_prueba(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'entrenador']:
+        messages.error(request, "No tienes permiso para editar pruebas.")
+        return redirect('list_pruebas')
+
+    prueba = get_object_or_404(Prueba, pk=pk)
+
+    if request.method == 'POST':
+        try:
+            prueba.fk_id_jug = Jugador.objects.get(pk=request.POST['fk_id_jug'])
+
+            prueba.fk_id_tip = TipoEvaluacion.objects.get(pk=request.POST['fk_id_tip'])
+
+            prueba.macro_pru = request.POST.get('macro_pru', '')
+            prueba.observaciones_pru = request.POST.get('observaciones_pru', '').strip() or "SIN OBSERVACIONES"
+            prueba.fecha_pru = request.POST.get('fecha_pru')
+            prueba.fecha_actualizacion_pru = timezone.now()
+            prueba.save()
+
+            # Eliminar detalles antiguos
+            DetallePrueba.objects.filter(fk_id_pru=prueba).delete()
+
+            # Insertar nuevos detalles
+            parametro_ids = request.POST.getlist('parametro_id[]')
+            valoraciones = request.POST.getlist('valoracion_det[]')
+
+            for parametro_id, valor in zip(parametro_ids, valoraciones):
+                if parametro_id and valor.strip():
+                    DetallePrueba.objects.create(
+                        fk_id_pru=prueba,
+                        fk_id_parametro_id=parametro_id,
+                        valoracion_det=valor.strip(),
+                        fecha_creacion_det=timezone.now()
+                    )
+
+            messages.success(request, "Prueba actualizada correctamente.")
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error al actualizar la prueba: {e}")
+
+    return redirect('list_pruebas')
+
+
+
+@login_required
+def delete_prueba(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'admin']:
+        messages.error(request, "No tienes permiso para esta acción.")
+        return redirect('list_pruebas')
+
+    if request.method == 'POST':
+        try:
+            prueba = get_object_or_404(Prueba, pk=pk)
+            prueba.delete()
+            messages.success(request, "Prueba eliminada correctamente.")
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+    return redirect('list_pruebas')
