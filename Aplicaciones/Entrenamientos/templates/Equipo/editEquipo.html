@@ -1,0 +1,163 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Editar Equipo{% endblock %}
+
+{% block content %}
+
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_equipo' %}">Equipos</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Editar Equipo</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center">Editar Equipo</h2>
+    <form method="POST" action="{% url 'edit_equipo' equipo.id_equ %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label for="nombre_equ" class="form-label">Nombre del Equipo <span class="text-danger">*</span></label>
+                <input type="text" name="nombre_equ" id="nombre_equ" class="form-control" value="{{ equipo.nombre_equ }}" required>
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="fecha_fundado_equ" class="form-label">Fecha Fundado</label>
+                <input type="date" name="fecha_fundado_equ" id="fecha_fundado_equ" class="form-control" value="{{ equipo.fecha_fundado_equ|date:'Y-m-d' }}">
+            </div>
+
+            <!-- Select de Temporada (preseleccionado) -->
+            <div class="mb-3 col-md-12">
+                <label for="fk_id_temp" class="form-label">Selecciona una Temporada</label>
+                <select id="fk_id_temp" name="fk_id_temp" class="form-select" required>
+                    <option value="" disabled selected>Selecciona una temporada</option>
+                    {% for temporada in temporadas %}
+                        <!-- Asegurarnos de que la temporada actual esté preseleccionada -->
+                        <option value="{{ temporada.id_temp }}" {% if temporada.id_temp == equipo.fk_id_temp.id_temp %}selected{% endif %}>
+                            {{ temporada.nombre_temp }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select de Entrenador (preseleccionado) -->
+            <div class="mb-3 col-md-12">
+                <label for="fk_id_ent" class="form-label">Selecciona un Entrenador</label>
+                <select id="fk_id_ent" name="fk_id_ent" class="form-select" required>
+                    <option value="" disabled selected>Selecciona un entrenador</option>
+                    {% for entrenador in entrenadores %}
+                        <option value="{{ entrenador.id_ent }}" {% if entrenador.id_ent == equipo.fk_id_ent.id_ent %}selected{% endif %}>
+                            {{ entrenador.fk_id_usu.nombres_usu }} {{ entrenador.fk_id_usu.primer_apellido_usu }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select de Categorías -->
+            <div class="mb-3 col-md-12">
+                <label for="categorias_edit" class="form-label">Categorías</label>
+                <select id="categorias_edit" name="categorias" class="form-select" multiple="multiple">
+                    {% for categoria in categorias %}
+                        <option value="{{ categoria.id_cat }}" {% if categoria.id_cat in categorias_ids %}selected{% endif %}>
+                            {{ categoria.nombre_cat }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-3 col-md-12">
+                <label for="descripcion_equ" class="form-label">Descripción</label>
+                <textarea name="descripcion_equ" id="descripcion_equ" class="form-control" rows="3">{{ equipo.descripcion_equ }}</textarea>
+            </div>
+
+            <!-- Logo -->
+            <div class="mb-3 col-md-12">
+                <label for="logo_equ_edi" class="form-label">Cambiar logo del equipo (opcional):</label>
+                <input type="file" name="logo_equ_edi" id="logo_equ_edi" class="form-control" accept="image/png, image/jpeg, image/jpg">
+                <input type="hidden" name="eliminar_logo" id="eliminar_logo" value="false"> <!-- Indicador de eliminación -->
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-warning me-2">
+                <i class="bi bi-check-lg me-1"></i> Actualizar
+            </button>
+            <a href="{% url 'list_equipo' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Inicializar Select2 para categorías en el formulario de edición
+        $('#categorias_edit').select2({
+            placeholder: "Selecciona las categorías",
+            allowClear: true,
+            width: '100%',
+        });
+
+        // Inicializar el fileinput para el logo con el botón de eliminación
+        $("#logo_equ_edi").fileinput({
+            allowedFileExtensions: ["jpg", "jpeg", "png"],
+            showUpload: false,
+            maxFileSize: 5000,
+            language: 'es',
+            browseLabel: 'Seleccionar',
+            removeLabel: 'Eliminar',
+            cancelLabel: 'Cancelar',
+            uploadLabel: 'Subir',
+            msgPlaceholder: 'Seleccionar archivo...',
+            msgSizeTooLarge: 'El archivo "{name}" (<b>{size} KB</b>) excede el tamaño máximo permitido de <b>{maxSize} KB</b>.',
+            msgFilesTooMany: 'El número de archivos seleccionados <b>({n})</b> excede el máximo permitido de <b>{m}</b>.',
+            msgInvalidFileExtension: 'Extensión no válida para el archivo "{name}". Solo se permiten archivos "{extensions}".',
+            dropZoneEnabled: true,
+            dropZoneTitle: 'Arrastra y suelta archivos aquí...',
+            initialPreview: [
+                {% if equipo.logo_equ %}
+                    "{{ equipo.logo_equ.url }}"
+                {% endif %}
+            ],
+            initialPreviewConfig: [
+                {% if equipo.logo_equ %}
+                    { caption: "{{ equipo.logo_equ.name }}", width: "120px", url: "{{ equipo.logo_equ.url }}", key: 1 }
+                {% endif %}
+            ],
+            initialPreviewAsData: true,
+            overwriteInitial: true,
+        });
+
+        // Detectar si el archivo fue eliminado y marcarlo para eliminarlo
+        $('#logo_equ_edi').off('filecleared').on('filecleared', function(event) {
+            document.getElementById('eliminar_logo').value = 'true';
+        });
+
+        // Validar el formulario
+        $("form").validate({
+            errorClass: 'is-invalid',
+            validClass: 'is-valid',
+            rules: {
+                nombre_equ: {
+                    required: true,
+                    minlength: 3
+                },
+                categorias: {
+                    required: true,
+                    minlength: 1
+                }
+            },
+            messages: {
+                nombre_equ: {
+                    required: "El nombre del equipo es obligatorio.",
+                    minlength: "Debe tener al menos 3 caracteres."
+                },
+                categorias: {
+                    required: "Debe seleccionar al menos una categoría.",
+                    minlength: "Debe seleccionar al menos una categoría."
+                }
+            }
+        });
+    });
+</script>
+
+{% endblock %}

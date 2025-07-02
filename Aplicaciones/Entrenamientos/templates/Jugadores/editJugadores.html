@@ -1,0 +1,451 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Editar Jugador{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Editar Jugador</h2>
+
+    <form method="POST" action="{% url 'edit_jugador' pk=jugador.pk %}" id="formEditJugador" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <div class="row">
+            <!-- Campos Usuario -->
+            <div class="col-md-6 mb-3">
+                <label>Correo</label>
+                <input type="email" name="correo_usu" id="correo_usu" class="form-control minuscula" value="{{ jugador.fk_id_usu.correo_usu }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Cédula</label>
+                <input type="text" name="cedula_usu" id="cedula_usu" class="form-control mayuscula" value="{{ jugador.fk_id_usu.cedula_usu }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Teléfono</label>
+                <input type="text" name="telefono_usu" id="telefono_usu" class="form-control mayuscula" value="{{ jugador.fk_id_usu.telefono_usu }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Nombres</label>
+                <input type="text" name="nombres_usu" id="nombres_usu" class="form-control mayuscula" value="{{ jugador.fk_id_usu.nombres_usu }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Primer Apellido</label>
+                <input type="text" name="primer_apellido_usu" id="primer_apellido_usu" class="form-control mayuscula" value="{{ jugador.fk_id_usu.primer_apellido_usu }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Segundo Apellido</label>
+                <input type="text" name="segundo_apellido_usu" id="segundo_apellido_usu" class="form-control mayuscula" value="{{ jugador.fk_id_usu.segundo_apellido_usu }}" required>
+            </div>
+            <div class="col-12 mb-3">
+                <label>Dirección</label>
+                <textarea name="direccion_usu" id="direccion_usu" class="form-control mayuscula" required>{{ jugador.fk_id_usu.direccion_usu }}</textarea>
+            </div>
+
+            <!-- Campos Jugador -->
+            <div class="col-md-6 mb-3">
+                <label>Fecha de Nacimiento</label>
+                <input type="date" name="fecha_nacimiento_jug" id="fecha_nacimiento_jug" class="form-control" value="{{ jugador.fecha_nacimiento_jug|date:'Y-m-d' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Edad</label>
+                <input type="number" name="edad_jug" id="edad_jug" class="form-control" value="{{ jugador.edad_jug }}" readonly>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label>Peso (kg)</label>
+                <input type="number" step="0.01" name="peso_jug" id="peso_jug" class="form-control mayuscula" value="{{ jugador.peso_jug| stringformat:'.2f' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Altura (cm)</label>
+                <input type="number" step="0.01" name="altura_jug" id="altura_jug" class="form-control mayuscula" value="{{ jugador.altura_jug| stringformat:'.2f' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Posición</label>
+                <select name="posicion_jug" id="posicion_jug" class="form-select" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="PORTERO" {% if jugador.posicion_jug == "PORTERO" %}selected{% endif %}>PORTERO</option>
+                    <option value="DEFENSA CENTRAL" {% if jugador.posicion_jug == "DEFENSA CENTRAL" %}selected{% endif %}>DEFENSA CENTRAL</option>
+                    <option value="LATERAL DERECHO" {% if jugador.posicion_jug == "LATERAL DERECHO" %}selected{% endif %}>LATERAL DERECHO</option>
+                    <option value="LATERAL IZQUIERDO" {% if jugador.posicion_jug == "LATERAL IZQUIERDO" %}selected{% endif %}>LATERAL IZQUIERDO</option>
+                    <option value="CENTROCAMPISTA DEFENSIVO" {% if jugador.posicion_jug == "CENTROCAMPISTA DEFENSIVO" %}selected{% endif %}>CENTROCAMPISTA DEFENSIVO</option>
+                    <option value="CENTROCAMPISTA OFENSIVO" {% if jugador.posicion_jug == "CENTROCAMPISTA OFENSIVO" %}selected{% endif %}>CENTROCAMPISTA OFENSIVO</option>
+                    <option value="EXTREMO DERECHO" {% if jugador.posicion_jug == "EXTREMO DERECHO" %}selected{% endif %}>EXTREMO DERECHO</option>
+                    <option value="EXTREMO IZQUIERDO" {% if jugador.posicion_jug == "EXTREMO IZQUIERDO" %}selected{% endif %}>EXTREMO IZQUIERDO</option>
+                    <option value="DELANTERO CENTRO" {% if jugador.posicion_jug == "DELANTERO CENTRO" %}selected{% endif %}>DELANTERO CENTRO</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Pie Dominante</label>
+                <select name="pie_dominante_jug" id="pie_dominante_jug" class="form-select" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="IZQUIERDO" {% if jugador.pie_dominante_jug == "IZQUIERDO" %}selected{% endif %}>IZQUIERDO</option>
+                    <option value="DERECHO" {% if jugador.pie_dominante_jug == "DERECHO" %}selected{% endif %}>DERECHO</option>
+                    <option value="AMBOS" {% if jugador.pie_dominante_jug == "AMBOS" %}selected{% endif %}>AMBOS</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Nombre Representante</label>
+                <input type="text" name="nombre_representante_jug" id="nombre_representante_jug" class="form-control mayuscula" value="{{ jugador.nombre_representante_jug }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Número de Emergencia</label>
+                <input type="text" name="numero_emergencia_jug" id="numero_emergencia_jug" class="form-control mayuscula" value="{{ jugador.numero_emergencia_jug }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Fecha de Ingreso</label>
+                <input type="date" name="fecha_ingreso_jug" id="fecha_ingreso_jug" class="form-control" value="{{ jugador.fecha_ingreso_jug|date:'Y-m-d' }}" required>
+            </div>
+
+            <!-- Selects -->
+            <div class="col-md-4 mb-3">
+                <label>Equipo</label>
+                <select name="fk_id_equ" id="equipo_select" class="form-select" required>
+                    <option value="">-- Seleccionar --</option>
+                    {% for equipo in equipos %}
+                        <option value="{{ equipo.id_equ }}" {% if equipo.id_equ == jugador.fk_id_equ.id_equ %}selected{% endif %}>{{ equipo.nombre_equ }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Categoría</label>
+                <select name="fk_id_cat" id="categoria_select" class="form-select" required>
+                    <option value="">-- Selecciona un equipo primero --</option>
+                    {% for categoria in categorias %}
+                        <option value="{{ categoria.id_cat }}" {% if categoria.id_cat == jugador.fk_id_cat.id_cat %}selected{% endif %}>{{ categoria.nombre_cat }}</option>
+                    {% endfor %}
+                </select>
+               
+
+                
+            </div>
+            <div class="col-md-4 mb-3">
+                <label>Estado</label>
+                <select name="estado_usu" class="form-select" required>
+                    <option value="activo" {% if jugador.fk_id_usu.estado_usu == 'activo' %}selected{% endif %}>Activo</option>
+                    <option value="inactivo" {% if jugador.fk_id_usu.estado_usu == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+
+            {% if request.user.rol_usu != 'entrenador' %}
+            <div class="col-md-4 mb-3">
+                <label>Entrenador</label>
+                <select name="fk_id_ent" id="entrenador_select" class="form-select" required>
+                    <option value="">-- Seleccionar --</option>
+                    {% for entrenador in entrenadores %}
+                        <option value="{{ entrenador.id_ent }}" {% if entrenador.id_ent == jugador.fk_id_ent.id_ent %}selected{% endif %}>
+                            {{ entrenador.fk_id_usu.nombres_usu }} {{ entrenador.fk_id_usu.primer_apellido_usu }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            
+        </div>
+        
+
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="{% url 'list_jugadores' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+<script>
+// Mayúsculas para textos
+$(document).on('input', '.mayuscula', function () {
+    if (this.tagName === 'TEXTAREA' || this.type === 'text') {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(start, end);
+    } else {
+        this.value = this.value.toUpperCase();
+    }
+});
+
+// Minúsculas para emails
+$(document).on('input', '.minuscula', function () {
+    let start = this.selectionStart;
+    let end = this.selectionEnd;
+    this.value = this.value.toLowerCase();
+    this.setSelectionRange(start, end);
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Select dependiente ---
+    const equipoCategorias = {
+        {% for equipo in equipos %}
+            "{{ equipo.id_equ }}": [
+                {% for cat in equipo.categorias.all %}
+                    {id: "{{ cat.id_cat }}", nombre: "{{ cat.nombre_cat }}"}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            ]{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    };
+    const equipoSelect = document.getElementById('equipo_select');
+    const categoriaSelect = document.getElementById('categoria_select');
+
+    equipoSelect.addEventListener('change', function () {
+        const equipoId = this.value;
+        let html = '<option value="">-- Seleccionar --</option>';
+        if (equipoCategorias[equipoId]) {
+            equipoCategorias[equipoId].forEach(cat => {
+                html += `<option value="${cat.id}">${cat.nombre}</option>`;
+            });
+        } else {
+            html = '<option value="">-- Sin categorías disponibles --</option>';
+        }
+        categoriaSelect.innerHTML = html;
+        categoriaSelect.value = "";
+        // Forzar validación manual al cambiar
+        $("#categoria_select").trigger('change');
+    });
+
+    // Validar cada vez que cambia select
+    $("#equipo_select, #categoria_select").on('change', function() {
+        $(this).valid();
+    });
+
+    // Calcular edad
+    document.getElementById('fecha_nacimiento_jug').addEventListener('change', function () {
+        const fechaNacimiento = new Date(this.value);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+        const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+            edad--;
+        }
+        document.getElementById('edad_jug').value = isNaN(edad) ? '' : edad;
+        $('#edad_jug').valid();
+    });
+});
+$(document).ready(function () {
+    // Esto es lo crucial para selects dependientes:
+    $("#formEditJugador").validate({
+        ignore: [],  // <= OBLIGATORIO para selects dinámicos
+        rules: {
+            correo_usu: {
+                required: true,
+                email: true,
+                remote: {
+                    url: "{% url 'validate_correo' %}",
+                    type: "get",
+                    data: { 
+                        correo_usu: function() { 
+                            return $("#correo_usu").val(); 
+                        }, 
+                        exclude_id: '{{ jugador.fk_id_usu.id_usu }}',
+                        check_change: function() { 
+                            return ($("#correo_usu").val() !== '{{ jugador.fk_id_usu.correo_usu }}'); 
+                        }
+                    }
+                }
+            },
+            cedula_usu: {
+                required: true,
+                minlength: 10,
+                maxlength: 10,
+                digits: true,
+                remote: {
+                    url: "{% url 'validate_cedula' %}",
+                    type: "get",
+                    data: { 
+                        cedula_usu: function() { 
+                            return $("#cedula_usu").val(); 
+                        }, 
+                        exclude_id: '{{ jugador.fk_id_usu.id_usu }}',
+                        check_change: function() { 
+                            return ($("#cedula_usu").val() !== '{{ jugador.fk_id_usu.cedula_usu }}'); 
+                        }
+                    }
+                }
+            },
+            telefono_usu: { required: true, digits: true, minlength: 10, maxlength: 10 },
+            nombres_usu: { required: true, minlength: 3 },
+            primer_apellido_usu: { required: true, minlength: 3 },
+            segundo_apellido_usu: { required: true, minlength: 3 },
+            direccion_usu: { required: true, minlength: 3 },
+            fecha_nacimiento_jug: { required: true },
+            edad_jug: { required: true },
+            peso_jug: { required: true, number: true },
+            altura_jug: { required: true, number: true },
+            posicion_jug: { required: true },
+            pie_dominante_jug: { required: true },
+            nombre_representante_jug: { required: false, minlength: 3 },
+            numero_emergencia_jug: { required: false, digits: true, minlength: 10, maxlength: 10 },
+            fecha_ingreso_jug: { required: true },
+            fk_id_equ: { required: true },
+            fk_id_cat: { required: true },
+            estado_jug: { required: true }
+        },
+        messages: {
+            correo_usu: {
+                required: "Este campo es obligatorio.",
+                email: "Ingresa un correo válido.",
+                remote: "Este correo ya está registrado."
+            },
+            cedula_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener 10 dígitos.",
+                maxlength: "Debe tener 10 dígitos.",
+                digits: "Solo se permiten números.",
+                remote: "Esta cédula ya está registrada."
+            },
+            telefono_usu: {
+                required: "El teléfono es obligatorio",
+                digits: "Solo se permiten números",
+                minlength: "El teléfono debe tener 10 dígitos",
+                maxlength: "El teléfono debe tener 10 dígitos"
+            },
+            nombres_usu: {
+                required: "El nombre es obligatorio",
+                minlength: "El nombre debe tener al menos 3 caracteres"
+            },
+            primer_apellido_usu: {
+                required: "El primer apellido es obligatorio",
+                minlength: "El primer apellido debe tener al menos 3 caracteres"
+            },
+            segundo_apellido_usu: {
+                required: "El segundo apellido es obligatorio",
+                minlength: "El segundo apellido debe tener al menos 3 caracteres"
+            },
+            direccion_usu: {
+                required: "La dirección es obligatoria",
+                minlength: "La dirección debe tener al menos 3 caracteres"
+            },
+            fecha_nacimiento_jug: {
+                required: "La fecha de nacimiento es obligatoria"
+            },
+            edad_jug: {
+                required: "La edad es obligatoria"
+            },
+            peso_jug: {
+                required: "El peso es obligatorio",
+                number: "Por favor ingresa un número válido"
+            },
+            altura_jug: {
+                required: "La altura es obligatoria",
+                number: "Por favor ingresa un número válido"
+            },
+            posicion_jug: {
+                required: "La posición es obligatoria"
+            },
+            pie_dominante_jug: {
+                required: "El pie dominante es obligatorio"
+            },
+            nombre_representante_jug: {
+                required: "El nombre del representante es opcional",
+                minlength: "El nombre del representante debe tener al menos 3 caracteres"
+            },
+            numero_emergencia_jug: {
+                digits: "Por favor ingresa un número válido",
+                minlength: "El número de emergencia debe tener 10 dígitos",
+                maxlength: "El número de emergencia debe tener 10 dígitos"
+            },
+            fecha_ingreso_jug: {
+                required: "La fecha de ingreso es obligatoria"
+            },
+            fk_id_equ: {
+                required: "El equipo es obligatorio"
+            },
+            fk_id_cat: {
+                required: "La categoría es obligatoria"
+            },
+            estado_jug: {
+                required: "El estado es obligatorio"
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function (form) {
+            // Forzar mayúsculas y minúsculas antes de enviar
+            $('.mayuscula').each(function () {
+                this.value = this.value.toUpperCase();
+            });
+            $('.minuscula').each(function () {
+                this.value = this.value.toLowerCase();
+            });
+            form.submit();
+        }
+    });
+
+    // Revalidar campos al cambiar cualquier input o select
+    $('input, select').on('change', function () {
+        $(this).valid();
+    });
+});
+
+
+</script>
+
+<style>
+    label.error {
+        color: red;
+        font-size: 14px;
+        font-weight: bold;
+        margin-top: 5px;
+        display: block;
+    }
+    
+    input.error,
+    select.error {
+        border: 2px solid red;
+    }
+    
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    h2 {
+        color: #2c3e50;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 10px;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    .modal-footer {
+        border-top: none;
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+    
+    .btn-success {
+        background-color: #27ae60;
+        border-color: #27ae60;
+    }
+    
+    .btn-success:hover {
+        background-color: #219653;
+        border-color: #219653;
+    }
+    
+    .btn-secondary {
+        background-color: #95a5a6;
+        border-color: #95a5a6;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #7f8c8d;
+        border-color: #7f8c8d;
+    }
+</style>
+
+{% endblock %}

@@ -1,15 +1,21 @@
-{% extends 'index.html' %}
+{% extends 'admin_dashboard.html' %}
 {% block title %}Lista de Administradores{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center">Lista de Administradores</h2>
-    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregar">
-        Crear Nuevo Administrador
-    </button>
 
-    <table id="tbl_admins" class="table table-bordered table-striped table-hover">
-        <thead class="table-dark">
+<ul class="breadcrumb mb-3">
+  <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+  <li class="breadcrumb-item active" aria-current="page">Administradores</li>
+</ul>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Lista de Administradores</h2>
+    <a href="{% url 'add_admin' %}" class="btn btn-success">
+      <i class="bi bi-plus-lg"></i> Crear Nuevo Administrador
+    </a>
+  </div>
+<div class="container mt-5">
+    <table id="tbl_admins" class="table table-bordered table-striped table-hover w-100">
+        <thead class="table-dark text-center">
             <tr>
                 <th>ID</th>
                 <th>Correo</th>
@@ -24,7 +30,7 @@
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="text-center">
             {% for u in admins %}
             <tr>
                 <td>{{ u.id_usu }}</td>
@@ -36,16 +42,16 @@
                 <td>{{ u.direccion_usu }}</td>
                 <td>
                     {% if u.estado_usu == 'activo' %}
-                      <span class="badge bg-success">Activo</span>
+                        <span class="badge bg-success">Activo</span>
                     {% else %}
-                      <span class="badge bg-secondary">Inactivo</span>
+                        <span class="badge bg-secondary">Inactivo</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if u.estado_invitacion == 'pendiente' %}
                         <span class="badge bg-warning text-dark">Pendiente</span>
                     {% else %}
-                        <span class="badge bg-primary">Aceptado</span>
+                        <span class="badge bg-success">Completado</span>
                     {% endif %}
                 </td>
                 <td>
@@ -56,25 +62,17 @@
                     {% endif %}
                 </td>
                 <td>
-                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                            data-bs-target="#modalEditar"
-                            data-id="{{ u.id_usu }}"
-                            data-correo="{{ u.correo_usu }}"
-                            data-cedula="{{ u.cedula_usu }}"
-                            data-nombres="{{ u.nombres_usu }}"
-                            data-papellido="{{ u.primer_apellido_usu }}"
-                            data-sapellido="{{ u.segundo_apellido_usu }}"
-                            data-direccion="{{ u.direccion_usu }}"
-                            data-telefono="{{ u.telefono_usu }}"
-                            data-estado="{{ u.estado_usu }}"
-                            data-invitacion="{{ u.estado_invitacion }}"
-                            title="Editar">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
-                            data-bs-target="#modalConfirmarEliminar"
-                            data-id="{{ u.id_usu }}"
-                            title="Eliminar">
+                    <a href="{% url 'edit_admin' u.id_usu %}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-pencil" title="Editar"></i> 
+                    </a>
+                    <button 
+                        class="btn btn-danger btn-sm btn-eliminar-admin"
+                        data-id="{{ u.id_usu }}"
+                        data-nombre="{{ u.nombres_usu }}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalConfirmarEliminar"
+                        title="Eliminar"
+                    >
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -84,148 +82,60 @@
     </table>
 </div>
 
-<!-- MODAL AGREGAR -->
-<div class="modal fade" id="modalAgregar" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <form method="POST" action="{% url 'add_admin' %}">
-          {% csrf_token %}
-          <div class="modal-header bg-success text-white">
-            <h5 class="modal-title">Registrar Administrador</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="correo_usu">Correo</label>
-              <input type="email" name="correo_usu" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="telefono_usu">Teléfono</label>
-              <input type="text" name="telefono_usu" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="cedula_usu">Cédula</label>
-              <input type="text" name="cedula_usu" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="nombres_usu">Nombres</label>
-              <input type="text" name="nombres_usu" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="primer_apellido_usu">Primer Apellido</label>
-              <input type="text" name="primer_apellido_usu" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="segundo_apellido_usu">Segundo Apellido</label>
-              <input type="text" name="segundo_apellido_usu" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="direccion_usu">Dirección</label>
-              <textarea name="direccion_usu" class="form-control" rows="3" required></textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Guardar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL EDITAR -->
-<div class="modal fade" id="modalEditar" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <form method="POST" id="formEditar">
-          {% csrf_token %}
-          <input type="hidden" name="id_usu" id="id_usu" value="">
 
 
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title">Editar Administrador</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="">Correo</label>
-              <input type="email" name="correo_usu" id="edit_correo" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit_telefono">Teléfono</label>
-              <input type="text" name="telefono_usu" id="edit_telefono" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit_cedula">Cédula</label>
-              <input type="text" name="cedula_usu" id="edit_cedula" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit_nombres">Nombres</label>
-              <input type="text" name="nombres_usu" id="edit_nombres" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit_papellido">Primer Apellido</label>
-              <input type="text" name="primer_apellido_usu" id="edit_papellido" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit_sapellido">Segundo Apellido</label>
-              <input type="text" name="segundo_apellido_usu" id="edit_sapellido" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label for="edit_direccion">Dirección</label>
-              <textarea name="direccion_usu" id="edit_direccion" class="form-control" rows="3" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="edit_estado">Estado del Usuario</label>
-              <select name="estado_usu" id="edit_estado" class="form-select" required>
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
-            </select>
-            
-            
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-warning">Actualizar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Inicializar DataTable
+    $('#tbl_admins').DataTable({
+        scrollX: true,
+        responsive: true,
+        dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+             '<"row"<"col-12"tr>>' +
+             '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+        buttons: [
+            {
+                extend: 'copyHtml5',
+                text: '<i class="bi bi-clipboard"></i> Copiar',
+                className: 'btn btn-secondary btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                className: 'btn btn-success btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'csvHtml5',
+                text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                className: 'btn btn-info btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> Imprimir',
+                className: 'btn btn-primary btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            }
+        ],
+        language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+        }
+    });
 
-<!-- Modal de Confirmación con Contraseña -->
-<div class="modal fade" id="modalConfirmarEliminar" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form method="POST" id="formEliminarConPassword">
-          {% csrf_token %}
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">Confirmar eliminación</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <p>Para eliminar este administrador, por favor ingresa tu contraseña:</p>
-            <input type="password" name="confirm_password" class="form-control" required>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-danger">Eliminar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Rellenar datos en el modal de editar
-        const modalEditar = document.getElementById('modalEditar');
+    // Modal Editar (rellena los campos)
+    const modalEditar = document.getElementById('modalEditar');
+    if (modalEditar) {
         modalEditar.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            document.getElementById('formEditar').action = `/admins/edit/${id}/`;
-            document.getElementById('id_usu').value = id;
-
+            document.getElementById('edit_id_usu').value = button.getAttribute('data-id');
             document.getElementById('edit_correo').value = button.getAttribute('data-correo');
             document.getElementById('edit_telefono').value = button.getAttribute('data-telefono');
             document.getElementById('edit_cedula').value = button.getAttribute('data-cedula');
@@ -234,357 +144,27 @@
             document.getElementById('edit_sapellido').value = button.getAttribute('data-sapellido');
             document.getElementById('edit_direccion').value = button.getAttribute('data-direccion');
             document.getElementById('edit_estado').value = button.getAttribute('data-estado');
-
-        });
-    
-        // Inicializar DataTable
-        $('#tbl_admins').DataTable({
-            dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
-                 '<"row"<"col-12"tr>>' +
-                 '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
-            buttons: [
-                {
-                    extend: 'copyHtml5',
-                    text: '<i class="bi bi-clipboard"></i> Copiar',
-                    className: 'btn btn-secondary btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'excelHtml5',
-                    text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'csvHtml5',
-                    text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
-                    className: 'btn btn-info btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'pdfHtml5',
-                    text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-                    className: 'btn btn-danger btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'print',
-                    text: '<i class="bi bi-printer"></i> Imprimir',
-                    className: 'btn btn-primary btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                }
-            ],
-            language: {
-                url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-            }
-        });
-    });
-    
-    // Confirmar eliminación con iziToast
-    function confirmarEliminacion(id) {
-        iziToast.question({
-            timeout: 3000,
-            close: false,
-            overlay: true,
-            displayMode: 'once',
-            title: '¿Estás seguro?',
-            message: 'Esta acción eliminará el administrador de forma permanente.',
-            position: 'center',
-            buttons: [
-                ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
-                    document.getElementById('form-eliminar-' + id).submit();
-                    instance.hide({}, toast);
-                }, true],
-                ['<button>Cancelar</button>', function (instance, toast) {
-                    instance.hide({}, toast);
-                }]
-            ]
         });
     }
-    </script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const modalEliminar = document.getElementById('modalConfirmarEliminar');
+
+    // Modal Eliminar (pone el id en el form)
+    const modalEliminar = document.getElementById('modalConfirmarEliminar');
+    if (modalEliminar) {
         modalEliminar.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const adminId = button.getAttribute('data-id');
             const form = document.getElementById('formEliminarConPassword');
             form.action = `/admins/delete/${adminId}/`;
         });
-    });
-    </script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const inputs = document.querySelectorAll('#modalAgregar input:not([type="email"]), #modalAgregar textarea,' +
-                                                  '#modalEditar input:not([type="email"]), #modalEditar textarea');
-    
-        inputs.forEach(input => {
-            if (!['edit_telefono', 'telefono_usu'].includes(input.id)) {
-                input.addEventListener('input', () => {
-                    input.value = input.value.toUpperCase();
-                });
-            }
-        });
-    });
-    </script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const modalAgregar = document.getElementById('modalAgregar');
-        modalAgregar.addEventListener('show.bs.modal', function () {
-            const form = modalAgregar.querySelector('form');
-            form.reset();
-            $(form).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-            $(form).find('div.invalid-feedback').remove();
-        });
-    });
-    </script>
-    
-    <script>
-    $(document).ready(function () {
-        $.validator.addMethod("regex", function(value, element, regexp) {
-            var re = new RegExp(regexp);
-            return this.optional(element) || re.test(value);
-        }, "Formato inválido.");
-    
-        // Solo números en teléfono y cédula
-        $('input[name="telefono_usu"], #edit_telefono, input[name="cedula_usu"], #edit_cedula').on('input', function () {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-    
-        // Solo letras en nombres y apellidos
-        $('input[name="nombres_usu"], input[name="primer_apellido_usu"], input[name="segundo_apellido_usu"], #edit_nombres, #edit_papellido, #edit_sapellido').on('input', function () {
-            this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, '');
-        });
-    
-        // Resetear modalAgregar
-        $('#modalAgregar').on('hidden.bs.modal', function () {
-            const form = $("#modalAgregar form")[0];
-            form.reset();
-            $("#modalAgregar form").validate().resetForm();
-            $(form).find('.form-control').removeClass('is-valid is-invalid');
-        });
-    
-        // Validar formulario AGREGAR Y EDITAR
-        $("#modalAgregar form").validate({
-            errorClass: 'is-invalid',
-            validClass: 'is-valid',
-            errorElement: 'div',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                error.insertAfter(element);
-            },
-            rules: {
-                correo_usu: {
-                    required: true,
-                    email: true,
-                    remote: {
-                        url: "/validate_correo/",
-                        type: "get",
-                        data: {
-                            correo_usu: function() {
-                                return $("input[name='correo_usu']").val();
-                            }
-                        }
-                    }
-                },
-                telefono_usu: {
-                    required: true,
-                    digits: true,
-                    minlength: 10,
-                    maxlength: 10
-                },
-                cedula_usu: {
-                    required: true,
-                    digits: true,
-                    minlength: 10,
-                    maxlength: 10,
-                    remote: {
-                        url: "/validate_cedula/",
-                        type: "get",
-                        data: {
-                            cedula_usu: function() {
-                                return $("input[name='cedula_usu']").val();
-                            }
-                        }
-                    }
-                },
-                nombres_usu: {
-                    required: true,
-                    minlength: 3,
-                    regex: "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$"
-                },
-                primer_apellido_usu: {
-                    required: true,
-                    minlength: 3,
-                    regex: "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$"
-                },
-                segundo_apellido_usu: {
-                    required: true,
-                    minlength: 3,
-                    regex: "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$"
-                },
-                direccion_usu: {
-                    required: true,
-                    minlength: 3
-                }
-            },
-            messages: {
-                correo_usu: {
-                    required: "El correo es obligatorio.",
-                    email: "Ingrese un correo válido.",
-                    remote: "Este correo ya está registrado."
-                },
-                telefono_usu: {
-                    required: "El teléfono es obligatorio.",
-                    digits: "Solo se permiten números.",
-                    minlength: "Debe tener 10 dígitos.",
-                    maxlength: "Debe tener 10 dígitos."
-                },
-                cedula_usu: {
-                    required: "La cédula es obligatoria.",
-                    digits: "Solo se permiten números.",
-                    minlength: "Debe tener 10 dígitos.",
-                    maxlength: "Debe tener 10 dígitos.",
-                    remote: "Esta cédula ya está registrada."
-                },
-                nombres_usu: {
-                    required: "Los nombres son obligatorios.",
-                    minlength: "Debe tener al menos 3 letras.",
-                    regex: "Solo letras y espacios."
-                },
-                primer_apellido_usu: {
-                    required: "Este campo es obligatorio.",
-                    minlength: "Debe tener al menos 3 letras.",
-                    regex: "Solo letras y espacios."
-                },
-                segundo_apellido_usu: {
-                    required: "Este campo es obligatorio.",
-                    minlength: "Debe tener al menos 3 letras.",
-                    regex: "Solo letras y espacios."
-                },
-                direccion_usu: {
-                    required: "La dirección es obligatoria.",
-                    minlength: "Debe tener al menos 3 caracteres."
-                }
-            }
-        });
-    
-        // Validar formulario EDITAR
-        $("#formEditar").validate({
-            errorClass: 'is-invalid',
-            validClass: 'is-valid',
-            errorElement: 'div',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                error.insertAfter(element);
-            },
-            rules: {
-                correo_usu: {
-                    required: true,
-                    email: true,
-                    remote: {
-                        url: "/validate_correo/",
-                        type: "get",
-                        data: {
-                            correo_usu: function() {
-                                return $("#edit_correo").val();
-                            },
-                            exclude_id: function() {
-                                return $("#id_usu").val();
-                            }
-                        }
-                    }
-                },
-                telefono_usu: {
-                    required: true,
-                    digits: true,
-                    minlength: 10,
-                    maxlength: 10
-                },
-                cedula_usu: {
-                    required: true,
-                    digits: true,
-                    minlength: 10,
-                    maxlength: 10,
-                    remote: {
-                        url: "/validate_cedula/",
-                        type: "get",
-                        data: {
-                            cedula_usu: function() {
-                                return $("#edit_cedula").val();
-                            },
-                            exclude_id: function() {
-                                return $("#id_usu").val();
-                            }
-                        }
-                    }
-                },
-                nombres_usu: {
-                    required: true,
-                    minlength: 3,
-                    regex: "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$"
-                },
-                primer_apellido_usu: {
-                    required: true,
-                    minlength: 3,
-                    regex: "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$"
-                },
-                segundo_apellido_usu: {
-                    required: true,
-                    minlength: 3,
-                    regex: "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$"
-                },
-                direccion_usu: {
-                    required: true,
-                    minlength: 3
-                }
-            },
-            messages: {
-                correo_usu: {
-                    required: "El correo es obligatorio.",
-                    email: "Ingrese un correo válido.",
-                    remote: "Este correo ya está registrado."
-                },
-                telefono_usu: {
-                    required: "El teléfono es obligatorio.",
-                    digits: "Solo se permiten números.",
-                    minlength: "Debe tener 10 dígitos.",
-                    maxlength: "Debe tener 10 dígitos."
-                },
-                cedula_usu: {
-                    required: "La cédula es obligatoria.",
-                    digits: "Solo se permiten números.",
-                    minlength: "Debe tener 10 dígitos.",
-                    maxlength: "Debe tener 10 dígitos.",
-                    remote: "Esta cédula ya está registrada."
-                },
-                nombres_usu: {
-                    required: "Los nombres son obligatorios.",
-                    minlength: "Debe tener al menos 3 letras.",
-                    regex: "Solo letras y espacios."
-                },
-                primer_apellido_usu: {
-                    required: "Este campo es obligatorio.",
-                    minlength: "Debe tener al menos 3 letras.",
-                    regex: "Solo letras y espacios."
-                },
-                segundo_apellido_usu: {
-                    required: "Este campo es obligatorio.",
-                    minlength: "Debe tener al menos 3 letras.",
-                    regex: "Solo letras y espacios."
-                },
-                direccion_usu: {
-                    required: "La dirección es obligatoria.",
-                    minlength: "Debe tener al menos 3 caracteres."
-                }
-            }
-        });
-    });
-    </script>
-    
+    }
+});
+</script>
 
-
+<style>
+#tbl_admins th,
+div.dataTables_scrollHead th {
+    background-color: #343a40 !important;
+    color: #fff !important;
+}
+</style>
 {% endblock %}

@@ -1,0 +1,209 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Editar Entrenador{% endblock %}
+
+{% block content %}
+
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_entrenadores' %}">Entrenadores</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+</ul>
+<div class="container mt-5">
+  <h2 class="text-center">Editar Entrenador</h2>
+    <form method="POST" id="formEditEntrenador" action="{% url 'edit_entrenador' entrenador.fk_id_usu.id_usu %}">
+        {% csrf_token %}
+        <input type="hidden" name="id_usu" value="{{ entrenador.fk_id_usu.id_usu }}">
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label for="correo_usu">Correo</label>
+                <input type="email" id="correo_usu" name="correo_usu" class="form-control" value="{{ entrenador.fk_id_usu.correo_usu }}" required autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="telefono_usu">Teléfono</label>
+                <input type="text" id="telefono_usu" name="telefono_usu" class="form-control mayuscula" value="{{ entrenador.fk_id_usu.telefono_usu }}" required autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="cedula_usu">Cédula</label>
+                <input type="text" id="cedula_usu" name="cedula_usu" class="form-control mayuscula" value="{{ entrenador.fk_id_usu.cedula_usu }}" required autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="nombres_usu">Nombres</label>
+                <input type="text" id="nombres_usu" name="nombres_usu" class="form-control mayuscula" value="{{ entrenador.fk_id_usu.nombres_usu }}" required autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="primer_apellido_usu">Primer Apellido</label>
+                <input type="text" id="primer_apellido_usu" name="primer_apellido_usu" class="form-control mayuscula" value="{{ entrenador.fk_id_usu.primer_apellido_usu }}" required autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="segundo_apellido_usu">Segundo Apellido</label>
+                <input type="text" id="segundo_apellido_usu" name="segundo_apellido_usu" class="form-control mayuscula" value="{{ entrenador.fk_id_usu.segundo_apellido_usu }}" required autocomplete="off">
+            </div>
+            <div class="mb-3 col-12">
+                <label for="direccion_usu">Dirección</label>
+                <textarea id="direccion_usu" name="direccion_usu" class="form-control mayuscula" rows="3" required autocomplete="off">{{ entrenador.fk_id_usu.direccion_usu }}</textarea>
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="estado_usu">Estado del Usuario</label>
+                <select id="estado_usu" name="estado_usu" class="form-select" required>
+                    <option value="activo" {% if entrenador.fk_id_usu.estado_usu == 'activo' %}selected{% endif %}>Activo</option>
+                    <option value="inactivo" {% if entrenador.fk_id_usu.estado_usu == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-warning">Actualizar</button>
+            <a href="{% url 'list_entrenadores' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+$(function() {
+    // --- VALIDACIÓN ---
+    $("#formEditEntrenador").validate({
+        rules: {
+            correo_usu: {
+                required: true,
+                email: true,
+                remote: {
+                    url: "{% url 'validate_correo' %}",
+                    type: "get",
+                    data: {
+                        correo_usu: function() { return $("#correo_usu").val(); },
+                        exclude_id: function() { return $("input[name='id_usu']").val(); }
+                    },
+                    // Forzar que no se cachee la respuesta
+                    cache: false
+                }
+            },
+            cedula_usu: {
+                required: true,
+                minlength: 10,
+                maxlength: 10,
+                digits: true,
+                remote: {
+                    url: "{% url 'validate_cedula' %}",
+                    type: "get",
+                    data: {
+                        cedula_usu: function() { return $("#cedula_usu").val(); },
+                        exclude_id: function() { return $("input[name='id_usu']").val(); }
+                    },
+                    cache: false
+                }
+            },
+            telefono_usu: {
+                required: true,
+                minlength: 10,
+                maxlength: 10,
+                digits: true
+            },
+            nombres_usu: {
+                required: true,
+                minlength: 3
+            },
+            primer_apellido_usu: {
+                required: true,
+                minlength: 2
+            },
+            segundo_apellido_usu: {
+                required: true,
+                minlength: 2
+            },
+            direccion_usu: {
+                required: true,
+                minlength: 2
+            },
+            estado_usu: {
+                required: true
+            }
+        },
+        messages: {
+            correo_usu: {
+                required: "Este campo es obligatorio.",
+                email: "Ingresa un correo válido.",
+                remote: "Este correo ya está registrado."
+            },
+            cedula_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener 10 dígitos.",
+                maxlength: "Debe tener 10 dígitos.",
+                digits: "Solo se permiten números.",
+                remote: "Esta cédula ya está registrada."
+            },
+            telefono_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener 10 dígitos.",
+                maxlength: "Debe tener 10 dígitos.",
+                digits: "Solo se permiten números."
+            },
+            nombres_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Mínimo 3 caracteres."
+            },
+            primer_apellido_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Mínimo 2 caracteres."
+            },
+            segundo_apellido_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Mínimo 2 caracteres."
+            },
+            direccion_usu: {
+                required: "Este campo es obligatorio.",
+                minlength: "Mínimo 2 caracteres."
+            },
+            estado_usu: {
+                required: "Selecciona un estado."
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function(form) {
+            // Forzar mayúsculas/minúsculas antes de enviar
+            $('.mayuscula').each(function() {
+                this.value = this.value.toUpperCase();
+            });
+            $('#correo_usu').val($('#correo_usu').val().toLowerCase());
+            form.submit();
+        }
+    });
+
+    // Forzar validación en tiempo real al escribir
+    $("#correo_usu").on("keyup change", function(){
+        $("#formEditEntrenador").validate().element("#correo_usu");
+    });
+    $("#cedula_usu").on("keyup change", function(){
+        $("#formEditEntrenador").validate().element("#cedula_usu");
+    });
+
+    // Forzar mayúsculas/minúsculas en tiempo real
+    $(document).on('input', '.mayuscula', function () {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(start, end);
+    });
+    $(document).on('input', '#correo_usu', function () {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toLowerCase();
+        this.setSelectionRange(start, end);
+    });
+});
+</script>
+
+<style>
+  label.error {
+      color: red;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 5px;
+  }
+  
+  input.error,
+  select.error {
+      border: 2px solid red;
+  }
+  
+  </style>
+{% endblock %}

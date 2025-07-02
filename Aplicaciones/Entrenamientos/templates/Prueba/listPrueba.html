@@ -1,351 +1,123 @@
-{% extends 'index.html' %}
-
+{% extends 'admin_dashboard.html' %}
 {% block title %}Lista de Pruebas{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center">Lista de Pruebas</h2>
-    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarPrueba">
-        Registrar Nueva Prueba
-    </button>
+<ul class="breadcrumb mb-3">
+  <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+  <li class="breadcrumb-item active" aria-current="page">Pruebas</li>
+</ul>
 
-    <!-- Tabla de listado -->
-    <table id="tbl_pruebas" class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Jugador</th>
-                <th>Evaluación</th>
-                <th>Macro</th>
-                <th>Fecha</th>
-                <th>Observaciones</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for prueba in pruebas %}
-            <tr>
-                <td>{{ prueba.id }}</td>
-                <td>{{ prueba.fk_id_jug.fk_id_usu.nombres_usu }} {{ prueba.fk_id_jug.fk_id_usu.primer_apellido_usu }}</td>
-                <td>{{ prueba.fk_id_tip.nombre_tip }}</td>
-                <td>{{ prueba.macro_pru }}</td>
-                <td>{{ prueba.fecha_pru|date:"d/m/Y" }}</td>
-                <td>{{ prueba.observaciones_pru }}</td>
-                <td>
-                  {% with detalles=prueba.detalleprueba_set.all %}
-                  <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                      data-bs-target="#modalEditarPrueba"
-                      data-id="{{ prueba.id }}"
-                      data-jugador="{{ prueba.fk_id_jug.id }}"
-                      data-evaluacion="{{ prueba.fk_id_tip.id }}"
-                      data-macro="{{ prueba.macro_pru }}"
-                      data-observaciones="{{ prueba.observaciones_pru }}"
-                      data-fecha="{{ prueba.fecha_pru|date:'Y-m-d' }}"
-                      data-detalles='[
-                          {% for det in detalles %}
-                            {
-                              "id": "{{ det.id }}",
-                              "parametro_id": "{{ det.fk_id_parametro.id }}",
-                              "titulo": "{{ det.fk_id_parametro.nombre_prm|escapejs }}",
-                              "valoracion": "{{ det.valoracion_det|stringformat:"f" }}"
-                            }{% if not forloop.last %},{% endif %}
-                          {% endfor %}
-                      ]'>
-                      <i title="Editar" class="bi bi-pencil-square"></i>
-                  </button>
-                  {% endwith %}
-              
-                  <form method="POST" action="{% url 'delete_prueba' prueba.id %}" style="display:inline;">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-danger btn-sm"
-                              onclick="return confirm('¿Estás seguro de que deseas eliminar esta prueba? Esta acción no se puede deshacer.')">
-                          <i title="Eliminar" class="bi bi-trash"></i>
-                      </button>
-                  </form>
-              </td>
-              
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- MODAL AGREGAR PRUEBA -->
-<div class="modal fade" id="modalAgregarPrueba" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-          <form method="POST" action="{% url 'add_prueba' %}">
-              {% csrf_token %}
-              <div class="modal-header bg-success text-white">
-                  <h5 class="modal-title">Registrar Nueva Prueba</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body">
-                  <div class="row">
-                      <div class="col-md-6 mb-3">
-                          <label>Jugador</label>
-                          <select name="fk_id_jug" class="form-select" required>
-                              <option value="">Seleccionar jugador</option>
-                              {% for jug in jugadores %}
-                              <option value="{{ jug.id }}">{{ jug.fk_id_usu.nombres_usu }} {{ jug.fk_id_usu.primer_apellido_usu }}</option>
-                              {% endfor %}
-                          </select>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                          <label>Evaluación</label>
-                          <select name="fk_id_eva" id="id_evaluacion" class="form-select" required>
-                              <option value="">Seleccionar evaluación</option>
-                              {% for eva in evaluaciones %}
-                              <option value="{{ eva.id }}">{{ eva.nombre_tip }}</option>
-                              {% endfor %}
-                          </select>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                          <label>Macro</label>
-                          <select name="macro_pru" class="form-select" required>
-                              <option value="MACRO1">MACRO1</option>
-                              <option value="MACRO2">MACRO2</option>
-                          </select>
-                      </div>
-                      <div class="col-md-6 mb-3">
-                          <label>Fecha</label>
-                          <input type="date" name="fecha_pru" class="form-control" value="{{ hoy|date:'Y-m-d' }}" required>
-                      </div>
-                      <div class="col-md-12 mb-3">
-                          <label>Observaciones</label>
-                          <textarea name="observaciones_pru" class="form-control" rows="2"></textarea>
-                      </div>
-                  </div>
-
-                  <hr>
-                  <h5>Detalle de Prueba</h5>
-                  <div class="table-responsive">
-                      <table class="table table-bordered" id="detalleTabla">
-                          <thead class="table-light">
-                              <tr>
-                                  <th>Título</th>
-                                  <th>Valoración</th>
-                              </tr>
-                          </thead>
-                          <tbody id="detalleBody">
-                              <!-- Las filas de los parámetros se cargarán aquí dinámicamente -->
-                          </tbody>
-                      </table>
-                  </div>
-              </div>
-              <div class="modal-footer">
-                  <button type="submit" class="btn btn-success">Guardar</button>
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              </div>
-          </form>
-      </div>
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Pruebas Registradas</h2>
+    <a href="{% url 'add_prueba' %}" class="btn btn-success">
+      <i class="bi bi-plus-lg"></i> Nueva Prueba
+    </a>
   </div>
+  <table class="table table-striped table-bordered align-middle" id="tbl_pruebas">
+    <thead class="table-dark text-center">
+      <tr>
+        <th>ID</th>
+        <th>Jugador</th>
+        <th>Tipo Evaluación</th>
+        <th>Macro</th>
+        <th>Temporada</th>
+        <th>Fecha</th>
+        <th>Promedio</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="text-center">
+      {% for pru in pruebas %}
+      <tr>
+        <td>{{ pru.id_pru }}</td>
+        
+        <td>
+          {% if pru.fk_id_jug and pru.fk_id_jug.fk_id_usu %}
+            {{ pru.fk_id_jug.fk_id_usu.nombres_usu }} {{ pru.fk_id_jug.fk_id_usu.primer_apellido_usu }}
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+        <td>{{ pru.fk_id_tip.nombre_tip }}</td>
+        <td>{{ pru.macro_pru }}</td>
+        <td>{{ pru.fk_id_temp.nombre_temp }}</td>
+        <td>{{ pru.fecha_pru|date:'d/m/Y' }}</td>
+        <td><span class="fw-bold">{{ pru.promedio_pru|floatformat:2 }}</span></td>
+        <td>
+          <a href="{% url 'edit_prueba' pru.id_pru %}" class="btn btn-warning btn-sm" title="Editar">
+            <i class="bi bi-pencil-square"></i>
+          </a>
+          <a href="{% url 'detalle_prueba' pru.id_pru %}" class="btn btn-info btn-sm" title="Ver Detalle">
+            <i class="bi bi-eye"></i>
+          </a>
+          <!-- Si manejas eliminación, puedes ponerlo aquí -->
+          <a href="#" class="btn btn-danger btn-sm" title="Eliminar">
+            <i class="bi bi-trash"></i>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9">No hay pruebas registradas.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <script>
-  // Cargar los parámetros del tipo de evaluación seleccionado
-  document.getElementById('id_evaluacion').addEventListener('change', function () {
-      let evaluacionId = this.value;
-      let parametrosContainer = document.getElementById('detalleBody');
-      parametrosContainer.innerHTML = ''; // Limpiar parámetros anteriores
-
-      // Solicitar parámetros del tipo de evaluación seleccionado
-      fetch(`/api/get_parametros/${evaluacionId}/`)
-          .then(response => response.json())
-          .then(data => {
-              if (data.length > 0) {
-                  data.forEach(parametro => {
-                      let parametroHtml = `
-                          <tr>
-                              <td>
-                                  <input type="hidden" name="parametro_id[]" value="${parametro.id}">
-                                  <input type="text" class="form-control" value="${parametro.titulo}" readonly>
-                              </td>
-                              <td>
-                                  <input type="number" name="valoracion_det[]" class="form-control" step="0.01" required>
-                              </td>
-                          </tr>`;
-                      parametrosContainer.insertAdjacentHTML('beforeend', parametroHtml);
-                  });
-              }
-          });
-  });
-</script>
-
-
-
-
-<!-- MODAL EDITAR PRUEBA -->
-<div class="modal fade" id="modalEditarPrueba" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <form method="POST" id="formEditarPrueba">
-        {% csrf_token %}
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title">Editar Prueba</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" name="id_prueba" id="edit_id_prueba">
-
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label>Jugador</label>
-              <select name="fk_id_jug" id="edit_fk_id_jug" class="form-select" required>
-                {% for jug in jugadores %}
-                  <option value="{{ jug.id }}">{{ jug.fk_id_usu.nombres_usu }} {{ jug.fk_id_usu.primer_apellido_usu }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="col-md-6 mb-3">
-              <label>Evaluación</label>
-              <select name="fk_id_tip" id="edit_fk_id_tip" class="form-select" required disabled>
-                {% for eva in evaluaciones %}
-                  <option value="{{ eva.id }}">{{ eva.nombre_tip }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="col-md-6 mb-3">
-              <label>Macro</label>
-              <select name="macro_pru" id="edit_macro_pru" class="form-select" required>
-                <option value="MACRO1">MACRO1</option>
-                <option value="MACRO2">MACRO2</option>
-              </select>
-            </div>
-
-            <div class="col-md-6 mb-3">
-              <label>Fecha</label>
-              <input type="date" name="fecha_pru" id="edit_fecha_pru" class="form-control" required>
-            </div>
-
-            <div class="col-md-12 mb-3">
-              <label>Observaciones</label>
-              <textarea name="observaciones_pru" id="edit_observaciones_pru" class="form-control" rows="3"></textarea>
-            </div>
-          </div>
-
-          <hr>
-          <h5>Detalle de la Prueba</h5>
-          <table class="table table-bordered" id="tablaEditarDetalles">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Valoración</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyEditarDetalles">
-              <!-- Se inyectan aquí -->
-            </tbody>
-          </table>
-        </div>
-
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-warning">Actualizar</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<script>
-function agregarFilaEditar(parametro_id = '', titulo = '', valoracion = '') {
-  const safeVal = (valoracion && !isNaN(valoracion)) ? parseFloat(valoracion).toFixed(2) : '';
-  const fila = `
-    <tr>
-      <td>
-        <input type="hidden" name="parametro_id[]" value="${parametro_id}">
-        <input type="text" class="form-control" value="${titulo}" readonly>
-      </td>
-      <td>
-        <input type="number" name="valoracion_det[]" class="form-control" step="0.01" value="${safeVal}" required>
-      </td>
-    </tr>`;
-  document.getElementById('tbodyEditarDetalles').insertAdjacentHTML('beforeend', fila);
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  const modalEditar = document.getElementById('modalEditarPrueba');
-  modalEditar.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-
-    document.getElementById('formEditarPrueba').action = `/pruebas/edit/${button.dataset.id}/`;
-    document.getElementById('edit_id_prueba').value = button.dataset.id;
-    document.getElementById('edit_fk_id_jug').value = button.dataset.jugador;
-    document.getElementById('edit_fk_id_tip').value = button.dataset.evaluacion;
-    document.getElementById('edit_macro_pru').value = button.dataset.macro;
-    document.getElementById('edit_observaciones_pru').value = button.dataset.observaciones;
-    document.getElementById('edit_fecha_pru').value = button.dataset.fecha;
-
-    const tbody = document.getElementById('tbodyEditarDetalles');
-    tbody.innerHTML = '';
-
-    try {
-      const detalles = JSON.parse(button.dataset.detalles || '[]');
-      detalles.forEach(det => {
-        agregarFilaEditar(det.parametro_id, det.titulo, det.valoracion);
-      });
-    } catch (error) {
-      console.error("Error al parsear detalles:", error);
-    }
-  });
+$(document).ready(function () {
+    $('#tbl_pruebas').DataTable({
+        scrollX: true,
+        responsive: true,
+        dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+             '<"row"<"col-12"tr>>' +
+             '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+        buttons: [
+            {
+                extend: 'copyHtml5',
+                text: '<i class="bi bi-clipboard"></i> Copiar',
+                className: 'btn btn-secondary btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                className: 'btn btn-success btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'csvHtml5',
+                text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                className: 'btn btn-info btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> Imprimir',
+                className: 'btn btn-primary btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            }
+        ],
+        language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+        }
+    });
 });
 </script>
 
-  
-  
-  
-
-  
-    
-  
-  
-
-<script>
-    $(document).ready(function () {
-        // Inicializar DataTable para la tabla de Evaluaciones
-        $('#tbl_pruebas').DataTable({
-            dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
-                '<"row"<"col-12"tr>>' +
-                '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
-            buttons: [
-                {
-                    extend: 'copyHtml5',
-                    text: '<i class="bi bi-clipboard"></i> Copiar',
-                    className: 'btn btn-secondary btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'excelHtml5',
-                    text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'csvHtml5',
-                    text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
-                    className: 'btn btn-info btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'pdfHtml5',
-                    text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-                    className: 'btn btn-danger btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'print',
-                    text: '<i class="bi bi-printer"></i> Imprimir',
-                    className: 'btn btn-primary btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                }
-            ],
-            language: {
-                url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-            }
-        });
-    });
-</script>
+<style>
+#tbl_pruebas th,
+div.dataTables_scrollHead th {
+  background-color: #343a40 !important;
+  color: #fff !important;
+}
+</style>
 {% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Editar Prueba{% endblock %}
+{% block content %}
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_pruebas' %}">Pruebas</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+</ul>
+
+<div class="container mt-4">
+    <h2 class="text-center mb-3">Editar Prueba</h2>
+    <form id="formEditPrueba" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="guardar" value="1">
+        <div class="row">
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_jug" class="form-label">Jugador <span class="text-danger">*</span></label>
+                <select name="fk_id_jug" id="fk_id_jug" class="form-select" disabled>
+                    <option value="">Seleccionar</option>
+                    {% for jug in jugadores %}
+                        <option value="{{ jug.id_jug }}" {% if valores.fk_id_jug == jug.id_jug %}selected{% endif %}>
+                            {{ jug.fk_id_usu.nombres_usu }} {{ jug.fk_id_usu.primer_apellido_usu }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="fk_id_jug" value="{{ valores.fk_id_jug }}">
+                
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_tip" class="form-label">Tipo de Evaluación <span class="text-danger">*</span></label>
+                <select name="fk_id_tip" id="fk_id_tip" class="form-select" disabled>
+                    <option value="">Seleccionar</option>
+                    {% for tipo in tipos %}
+                        <option value="{{ tipo.id_tip }}" {% if valores.fk_id_tip == tipo.id_tip %}selected{% endif %}>
+                            {{ tipo.nombre_tip }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="fk_id_tip" value="{{ valores.fk_id_tip }}">
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_temp" class="form-label">Temporada <span class="text-danger">*</span></label>
+                <select name="fk_id_temp" id="fk_id_temp" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for temp in temporadas %}
+                        <option value="{{ temp.id_temp }}" {% if valores.fk_id_temp == temp.id_temp %}selected{% endif %}>
+                            {{ temp.nombre_temp }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="macro_pru" class="form-label">Macro <span class="text-danger">*</span></label>
+                <select name="macro_pru" id="macro_pru" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for m in macros %}
+                        <option value="{{ m }}" {% if valores.macro_pru == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fecha_pru" class="form-label">Fecha <span class="text-danger">*</span></label>
+                <input type="date" name="fecha_pru" id="fecha_pru" class="form-control"
+                    value="{{ valores.fecha_pru }}">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="observaciones_pru" class="form-label">Observaciones</label>
+            <textarea name="observaciones_pru" id="observaciones_pru" class="form-control">{{ valores.observaciones_pru }}</textarea>
+        </div>
+
+        <hr>
+        <h5 class="text-center">Parámetros Evaluados</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Valor Observado</th>
+                        <th>Unidad</th>
+                        <th>Nota Calculada</th>
+                    </tr>
+                </thead>
+                <tbody id="parametros-tbody">
+                {% for det in detalles %}
+                    <tr>
+                        <td>
+                            <input type="hidden" name="fk_id_prm[]" value="{{ det.fk_id_prm.id_prm }}">
+                            {{ det.fk_id_prm.nombre_prm }}
+                        </td>
+                        <td>
+                            <input type="number" name="valor_observado[]" step="0.01" min="0"
+                                class="form-control valor-observado"
+                                value="{{ det.valor_observado|stringformat:'.2f' }}"
+                                data-prm='{{ det.rubricas_json|safe }}'>
+                        </td>
+                        <td>
+                            <span>{{ det.unidad }}</span>
+                            <input type="hidden" name="unidad[]" value="{{ det.unidad }}">
+                        </td>
+                        <td>
+                            <input type="number" name="nota_calculada[]" step="0.01" min="0" max="10"
+                                class="form-control nota-calculada"
+                                value="{{ det.nota_calculada|stringformat:'.2f' }}" readonly>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mb-3 text-end">
+            <span class="fw-bold">Promedio: </span>
+            <span id="promedioPrueba" class="text-primary fs-5" >0.00</span>
+        </div>
+        <div class="text-center mt-3">
+            <button type="submit" id="btn-guardar-prueba" class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-1"></i> Guardar Cambios
+            </button>
+            <a href="{% url 'list_pruebas' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- JS LIBS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).on('input', '.valor-observado', function(){
+    let val = parseFloat($(this).val());
+    let rubricasRaw = $(this).attr('data-prm');
+    let nota = '';
+    let rubricas = [];
+    try {
+        rubricas = JSON.parse(rubricasRaw);
+    } catch (e) {
+        rubricas = [];
+    }
+    let encontrado = false;
+    if(Array.isArray(rubricas) && rubricas.length > 0 && !isNaN(val)){
+        rubricas.forEach(function(r){
+            let min = parseFloat(r.valor_min_rub);
+            let max = parseFloat(r.valor_max_rub);
+            let punt = parseFloat(r.puntaje_rub);
+            if(val >= min && val <= max){
+                nota = punt;
+                encontrado = true;
+            }
+        });
+    }
+    $(this).closest('tr').find('.nota-calculada').val(nota);
+    calcularPromedio();
+});
+
+function calcularPromedio(){
+    let sum = 0, count = 0;
+    $('.nota-calculada').each(function(){
+        let v = parseFloat($(this).val());
+        if(!isNaN(v)){
+            sum += v;
+            count++;
+        }
+    });
+    let prom = (count > 0) ? (sum / count).toFixed(2) : "0.00";
+    $('#promedioPrueba').text(prom);
+}
+$(function(){
+    calcularPromedio();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Dashboard del Entrenador{% endblock %}
+
+{% block content %}
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-3">Dashboard del Entrenador</h2>
+
+    <!-- Botones principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a href="{% url 'list_jugadores' %}" class="btn btn-primary btn-block">
+                <i class="bi bi-person"></i> Jugadores
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'list_pruebas' %}" class="btn btn-success btn-block">
+                <i class="bi bi-journal-check"></i> Pruebas
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#" class="btn btn-info btn-block">
+                <i class="bi bi-file-earmark-bar-graph"></i> Reportes
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#" class="btn btn-warning btn-block">
+                <i class="bi bi-gear"></i> Ajustes
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Mostrar equipo -->
+        <div class="col-md-4">
+            <h5>Equipo</h5>
+            <p>{{ equipo.nombre_equ }}</p>
+        </div>
+
+        <!-- Mostrar jugadores activos -->
+        <div class="col-md-4">
+            <h5>Jugadores Activos</h5>
+            <p>{{ jugadores_activos }}</p>
+        </div>
+
+        <!-- Mostrar pruebas realizadas -->
+        <div class="col-md-4">
+            <h5>Pruebas Realizadas</h5>
+            <p>{{ pruebas_realizadas }}</p>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row">
+        <!-- Mostrar promedio general -->
+        <div class="col-md-4">
+            <h5>Promedio General</h5>
+            <p>{{ promedio_general|floatformat:2 }}</p>
+        </div>
+
+        <!-- Últimas pruebas -->
+        <div class="col-md-8">
+            <h5>Últimas 5 Pruebas Realizadas</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Jugador</th>
+                        <th>Tipo Evaluación</th>
+                        <th>Macro</th>
+                        <th>Fecha</th>
+                        <th>Promedio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prueba in ultimas_pruebas %}
+                    <tr>
+                        <td>{{ prueba.fk_id_jug.fk_id_usu.nombres_usu }} {{ prueba.fk_id_jug.fk_id_usu.primer_apellido_usu }}</td>
+                        <td>{{ prueba.fk_id_tip.nombre_tip }}</td>
+                        <td>{{ prueba.macro_pru }}</td>
+                        <td>{{ prueba.fecha_pru|date:"d/m/Y" }}</td>
+                        <td>{{ prueba.promedio_pru|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">No hay pruebas recientes.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

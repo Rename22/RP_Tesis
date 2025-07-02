@@ -1,497 +1,158 @@
-{% extends 'index.html' %}
+{% extends 'admin_dashboard.html' %}
 
 {% block title %}Lista de Equipos{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center">Lista de Equipos</h2>
-    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarEquipo">
-        Crear Nuevo Equipo
-    </button>
 
-    <table id="tbl_equipos" class="table table-bordered table-striped table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Fecha Fundado</th>
-                <th>Categorías</th>
-                <th>Descripción</th>
-                <th>Logo</th>
-                
-                <th>Creación</th>
-                <th>Actualización</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for equipo in equipos %}
-            <tr>
-                <td>{{ equipo.id }}</td>
-                <td>{{ equipo.nombre_equ }}</td>
-                <td>{{ equipo.fecha_fundado_equ|date:"d/m/Y" }}</td>
-                <td>
-                    {% for categoria in equipo.categorias.all %}
-                      {{ categoria.nombre_cat }}{% if not forloop.last %}, {% endif %}
-                    {% empty %}
-                      Sin categorías
-                    {% endfor %}
-                  </td>
-                <td>{{ equipo.descripcion_equ }}</td>
-                <td>
-                    {% if equipo.logo_equ %}
-                        <img src="{{ equipo.logo_equ.url }}" alt="Logo de {{ equipo.nombre_equ }}" class="img-thumbnail" width="150">
-                    {% else %}
-                        <p>No disponible</p>
-                    {% endif %}
-                </td>
-                
-                <td>{{ equipo.fecha_creacion_equ|date:"d/m/Y H:i" }}</td>
-                <td>{{ equipo.fecha_actualizacion_equ|date:"d/m/Y H:i" }}</td>
-                <td>
-                    <!-- Botón de editar corregido -->
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                                    data-bs-target="#modalEditarEquipo"
-                                    data-id="{{ equipo.id }}"
-                                    data-nombre="{{ equipo.nombre_equ }}"
-                                    data-descripcion="{{ equipo.descripcion_equ }}"
-                                    data-logo-url="{% if equipo.logo_equ %}{{ equipo.logo_equ.url }}{% endif %}"
-                                    data-fundado="{{ equipo.fecha_fundado_equ|date:'Y-m-d' }}"
-                                    data-categorias="{{ equipo.categorias_ids|join:',' }}" 
-                                    title="Editar">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Equipos</li>
+</ul>
 
-
-
-
-
-
-                    <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionEquipo({{ equipo.id }})" title="Eliminar">
-                        <i class="bi bi-trash"></i>
-                    </button>
-
-                    <form id="form-eliminar-equipo-{{ equipo.id }}" method="POST" action="{% url 'delete_equipo' equipo.id %}">
-                        {% csrf_token %}
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Lista de Equipos</h2>
+    <a href="{% url 'add_equipo' %}" class="btn btn-success">
+        <i class="bi bi-plus-lg"></i> Crear Nuevo Equipo
+    </a>
 </div>
 
-<!-- MODAL AGREGAR -->
-<div class="modal fade" id="modalAgregarEquipo" tabindex="-1" >
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST" action="{% url 'add_equipo' %}" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">Registrar Nuevo Equipo</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label>Nombre</label>
-            <input type="text" name="nombre_equ" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label>Fecha Fundado</label>
-            <input type="date" name="fecha_fundado_equ" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label for="categorias">Categorías</label>
-            <select id="categorias" name="categorias" class="form-select" multiple="multiple">
-              {% for categoria in categorias %}
-                <option value="{{ categoria.id }}">{{ categoria.nombre_cat }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label>Descripción</label>
-            <textarea name="descripcion_equ" class="form-control"></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="logo_equ" class="form-label">Logo del equipo</label>
-            <input type="file" id="logo_equ" name="logo_equ" class="form-control" accept="image/png, image/jpeg, image/jpg">
-            <div id="logo-error-container"></div>
-          </div>
-          
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Guardar</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+<table class="table table-striped table-bordered" id="tbl_equipos">
+    <thead class="table-dark text-center">
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Fecha Fundado</th>
+            <th>Categorías</th>
+            <th>Temporada</th>
+            <th>Entrenador</th>
+            <th>Descripción</th>
+            <th>Logo</th>
+            <th>Creación</th>
+            <th>Actualización</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody class="text-center">
+        {% for equipo in equipos %}
+        <tr>
+            <td>{{ equipo.id_equ }}</td>
+            <td>{{ equipo.nombre_equ }}</td>
+            <td>{{ equipo.fecha_fundado_equ|date:"d/m/Y" }}</td>
+            <td>
+                {% for categoria in equipo.categorias.all %}
+                    {{ categoria.nombre_cat }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Sin categorías
+                {% endfor %}
+            </td>
+            <td>{{ equipo.fk_id_temp.nombre_temp }}</td>
+            <td>
+                {% if equipo.fk_id_ent %}
+                    <!-- Acceder al nombre completo del entrenador a través de la relación con Usuario -->
+                    {{ equipo.fk_id_ent.fk_id_usu.nombres_usu }} {{ equipo.fk_id_ent.fk_id_usu.primer_apellido_usu }}
+                {% else %}
+                    No asignado
+                {% endif %}
+            </td>
+            <td>{{ equipo.descripcion_equ }}</td>
+            <td>
+                {% if equipo.logo_equ %}
+                    <img src="{{ equipo.logo_equ.url }}" alt="Logo de {{ equipo.nombre_equ }}" class="img-thumbnail" width="150">
+                {% else %}
+                    <p>No disponible</p>
+                {% endif %}
+            </td>
+            <td>{{ equipo.fecha_creacion_equ|date:"d/m/Y H:i" }}</td>
+            <td>{{ equipo.fecha_actualizacion_equ|date:"d/m/Y H:i" }}</td>
+            <td>
+                <a href="{% url 'edit_equipo' equipo.id_equ %}" class="btn btn-warning btn-sm" title="Editar">
+                    <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionEquipo({{ equipo.id_equ }})" title="Eliminar">
+                    <i class="bi bi-trash"></i> Eliminar
+                </button>
 
+                <form id="form-eliminar-equipo-{{ equipo.id_equ }}" method="POST" action="{% url 'delete_equipo' equipo.id_equ %}">
+                    {% csrf_token %}
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-<!-- MODAL EDITAR -->
-<div class="modal fade" id="modalEditarEquipo" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form method="POST" id="formEditarEquipo" enctype="multipart/form-data">
-          {% csrf_token %}
-          <input type="hidden" name="id_equipo" id="id_equipo">
-          <input type="hidden" name="eliminar_logo" id="eliminar_logo" value="false"> <!-- Indicador eliminación -->
-  
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title">Editar Equipo</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-  
-          <div class="modal-body">
-            <div class="mb-3">
-              <label>Nombre</label>
-              <input type="text" name="nombre_equ" id="edit_nombre_equ" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label>Fecha Fundado</label>
-                <input type="date" name="fecha_fundado_equ" id="edit_fecha_fundado_equ" class="form-control">
-            </div>
-            <div class="mb-3">
-                <label for="categorias_edit">Categorías</label>
-                <select id="categorias_edit" name="categorias" class="form-select" multiple="multiple">
-                  {% for categoria in categorias %}
-                    <option value="{{ categoria.id }}">{{ categoria.nombre_cat }}</option>
-                  {% endfor %}
-                </select>
-            </div>
-              
-  
-            <div class="mb-3">
-              <label>Descripción</label>
-              <textarea name="descripcion_equ" id="edit_descripcion_equ" class="form-control"></textarea>
-            </div>
-  
-            <div class="mb-3">
-              <label for="logo_equ_edi" class="form-label">Cambiar logo del equipo (opcional):</label>
-              <input type="file" id="logo_equ_edi" name="logo_equ_edi" accept="image/png, image/jpeg, image/jpg">
-            </div>
-  
-            
-          </div>
-  
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-warning">Actualizar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  
- 
-  
 <script>
     $(document).ready(function () {
-      // Inicializar DataTable para la tabla de Equipos
-      $('#tbl_equipos').DataTable({
-        dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
-          '<"row"<"col-12"tr>>' +
-          '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
-        buttons: [
-          {
-            extend: 'copyHtml5',
-            text: '<i class="bi bi-clipboard"></i> Copiar',
-            className: 'btn btn-secondary btn-sm',
-            exportOptions: { columns: ':not(:last-child)' }
-          },
-          {
-            extend: 'excelHtml5',
-            text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-            className: 'btn btn-success btn-sm',
-            exportOptions: { columns: ':not(:last-child)' }
-          },
-          {
-            extend: 'csvHtml5',
-            text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
-            className: 'btn btn-info btn-sm',
-            exportOptions: { columns: ':not(:last-child)' }
-          },
-          {
-            extend: 'pdfHtml5',
-            text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-            className: 'btn btn-danger btn-sm',
-            exportOptions: { columns: ':not(:last-child)' }
-          },
-          {
-            extend: 'print',
-            text: '<i class="bi bi-printer"></i> Imprimir',
-            className: 'btn btn-primary btn-sm',
-            exportOptions: { columns: ':not(:last-child)' }
-          }
-        ],
-        language: {
-          url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-        }
-      });
-  
-      // Validar formulario CREAR EQUIPO
-      $("#modalAgregarEquipo form").validate({
-        errorClass: 'is-invalid',
-        validClass: 'is-valid',
-        errorElement: 'div',
-        errorPlacement: function (error, element) {
-            error.addClass('invalid-feedback');
-            if (element.hasClass('select2-hidden-accessible')) {
-            error.insertAfter(element.next('.select2-container')); // Mostrar error después del contenedor Select2
-            } else {
-            error.insertAfter(element);
+        // Inicializar DataTable para equipos
+        $('#tbl_equipos').DataTable({
+            scrollX: true,
+            responsive: true,
+            dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+                '<"row"<"col-12"tr>>' +
+                '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+            buttons: [
+                {
+                    extend: 'copyHtml5',
+                    text: '<i class="bi bi-clipboard"></i> Copiar',
+                    className: 'btn btn-secondary btn-sm'
+                },
+                {
+                    extend: 'excelHtml5',
+                    text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                    className: 'btn btn-success btn-sm'
+                },
+                {
+                    extend: 'csvHtml5',
+                    text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                    className: 'btn btn-info btn-sm'
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                    className: 'btn btn-danger btn-sm'
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="bi bi-printer"></i> Imprimir',
+                    className: 'btn btn-primary btn-sm'
+                }
+            ],
+            language: {
+                url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
             }
-        },
-        rules: {
-            nombre_equ: {
-            required: true,
-            minlength: 3
-            },
-            categorias: {
-            required: true,
-            minlength: 1
-            }
-        },
-        messages: {
-            nombre_equ: {
-            required: "El nombre del equipo es obligatorio.",
-            minlength: "Debe tener al menos 3 caracteres."
-            },
-            categorias: {
-            required: "Debe seleccionar al menos una categoría.",
-            minlength: "Debe seleccionar al menos una categoría."
-            }
-        }
         });
-
-        // Refrescar validación al cambiar el select2
-        $('#categorias').on('change', function () {
-        $(this).valid();
-        });
-
-  
-     // Validar formulario EDITAR EQUIPO
-      $("#formEditarEquipo").validate({
-        errorClass: 'is-invalid',
-        validClass: 'is-valid',
-        errorElement: 'div',
-        errorPlacement: function (error, element) {
-          error.addClass('invalid-feedback');
-          if (element.hasClass('select2-hidden-accessible')) {
-            error.insertAfter(element.next('.select2-container'));
-          } else {
-            error.insertAfter(element);
-          }
-        },
-        rules: {
-          nombre_equ: {
-            required: true,
-            minlength: 3
-          },
-          categorias: {
-            required: true,
-            minlength: 1
-            }
-        },
-        messages: {
-          nombre_equ: {
-            required: "El nombre del equipo es obligatorio.",
-            minlength: "Debe tener al menos 3 caracteres."
-          },
-          categorias: {
-            required: "Debe seleccionar al menos una categoría.",
-            minlength: "Debe seleccionar al menos una categoría."
-            }
-        }
-      });
-
-      // Refrescar validación al cambiar select2 (editar)
-      $('#categorias_edit').on('change', function () {
-        $(this).valid();
-      });
-  
-      // Rellenar campos del modal editar
-      const modalEditar = document.getElementById('modalEditarEquipo');
-        modalEditar.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-
-            // Datos básicos
-            const id = button.getAttribute('data-id');
-            const nombre = button.getAttribute('data-nombre');
-            const descripcion = button.getAttribute('data-descripcion');
-            const logoUrl = button.getAttribute('data-logo-url');
-            const fundado = button.getAttribute('data-fundado');
-
-            // Obtener categorías como string y convertirlas a array
-            const categoriasString = button.getAttribute('data-categorias');
-            const selectedArray = categoriasString ? categoriasString.split(',').map(Number) : [];
-
-            // Setear acción y campos del formulario
-            document.getElementById('formEditarEquipo').action = `/equipos/edit/${id}/`;
-            document.getElementById('id_equipo').value = id;
-            document.getElementById('edit_nombre_equ').value = nombre;
-            document.getElementById('edit_descripcion_equ').value = descripcion;
-            document.getElementById('edit_fecha_fundado_equ').value = fundado;
-            document.getElementById('eliminar_logo').value = 'false';  // Reset indicador de eliminación
-
-            // Configurar Select2 con categorías existentes
-            $('#categorias_edit').val(selectedArray).trigger('change');
-
-            // Inicializar fileinput para el logo
-            $('#logo_equ_edi').fileinput('destroy');
-            $('#logo_equ_edi').fileinput({
-                showUpload: false,
-                showRemove: true,
-                allowedFileExtensions: ['jpg', 'jpeg', 'png'],
-                initialPreviewAsData: true,
-                initialPreview: logoUrl ? [logoUrl] : [],
-                initialPreviewConfig: logoUrl ? [{caption: "Logo actual", key: 1}] : [],
-                overwriteInitial: true,
-                maxFileSize: 2000,
-                dropZoneTitle: 'Arrastra y suelta aquí el nuevo logo o haz clic para seleccionar',
-                browseLabel: 'Seleccionar',
-                removeLabel: 'Eliminar',
-                theme: 'fas',
-            });
-
-            // Evento para detectar cuando el usuario elimina la imagen
-            $('#logo_equ_edi').off('filecleared').on('filecleared', function(event) {
-                document.getElementById('eliminar_logo').value = 'true';
-            });
-
-            // Evento para detectar cuando se selecciona un archivo nuevo
-            $('#logo_equ_edi').off('fileselect').on('fileselect', function(event, numFiles, label) {
-                document.getElementById('eliminar_logo').value = 'false';
-            });
-
-            // Inicializar Select2 para categorías en modal editar
-            $('#categorias_edit').select2({
-                placeholder: "Selecciona categorías",
-                allowClear: true,
-                width: '100%',
-                dropdownParent: $('#modalEditarEquipo')
-            });
-
-            // Cargar las categorías seleccionadas (ids) en el select2
-            if (categoriasSeleccionadas) {
-                let selectedArray = categoriasSeleccionadas.split(',').map(x => x.trim());
-                $('#categorias_edit').val(selectedArray).trigger('change');
-            } else {
-                $('#categorias_edit').val(null).trigger('change');
-            }
-
-            // Opcional: cerrar dropdown al seleccionar en select2 (modal editar)
-            $('#categorias_edit').off('select2:select').on('select2:select', function () {
-                $(this).select2('close');
-            });
-        });
-
-
-
-  
-      // Resetear formulario al cerrar el modal agregar
-      $('#modalAgregarEquipo').on('hidden.bs.modal', function () {
-        const form = $("#modalAgregarEquipo form")[0];
-        form.reset();
-        $("#modalAgregarEquipo form").validate().resetForm();
-        $(form).find('.form-control').removeClass('is-valid is-invalid');
-      });
-  
-      // Convertir a mayúsculas todos los inputs/textareas
-      const inputs = document.querySelectorAll(
-        '#modalAgregarEquipo input, #modalAgregarEquipo textarea,' +
-        '#modalEditarEquipo input, #modalEditarEquipo textarea'
-      );
-      inputs.forEach(input => {
-        input.addEventListener('input', () => {
-          input.value = input.value.toUpperCase();
-        });
-      });
     });
-  
+
     // Confirmar eliminación con iziToast
     function confirmarEliminacionEquipo(id) {
-      iziToast.question({
-        timeout: 3000,
-        close: false,
-        overlay: true,
-        displayMode: 'once',
-        title: '¿Estás seguro?',
-        message: 'Esta acción eliminará el equipo de forma permanente.',
-        position: 'center',
-        buttons: [
-          ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
-            document.getElementById('form-eliminar-equipo-' + id).submit();
-            instance.hide({}, toast);
-          }, true],
-          ['<button>Cancelar</button>', function (instance, toast) {
-            instance.hide({}, toast);
-          }]
-        ]
-      });
+        iziToast.question({
+            timeout: 3000,
+            close: false,
+            overlay: true,
+            displayMode: 'once',
+            title: '¿Estás seguro?',
+            message: 'Esta acción eliminará el equipo de forma permanente.',
+            position: 'center',
+            buttons: [
+                ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
+                    document.getElementById('form-eliminar-equipo-' + id).submit();
+                    instance.hide({}, toast);
+                }, true],
+                ['<button>Cancelar</button>', function (instance, toast) {
+                    instance.hide({}, toast);
+                }]
+            ]
+        });
     }
-  </script>
-  <script>
-    $("#logo_equ").fileinput({
-            allowedFileExtensions: ["jpg", "jpeg", "png"],
-            showUpload: false,
-            maxFileSize: 2048,
-            language: 'es', // Cambiar el idioma a español
-            browseLabel: 'Seleccionar', // Texto para el botón de seleccionar archivo
-            removeLabel: 'Eliminar', // Texto para el botón de eliminar archivo
-            cancelLabel: 'Cancelar', // Texto para el botón de cancelar
-            uploadLabel: 'Subir', // Texto para el botón de subir
-            msgPlaceholder: 'Seleccionar archivo...', // Texto de placeholder
-            msgSizeTooLarge: 'El archivo "{name}" (<b>{size} KB</b>) excede el tamaño máximo permitido de <b>{maxSize} KB</b>.', // Mensaje de error cuando el archivo es demasiado grande
-            msgFilesTooMany: 'El número de archivos seleccionados <b>({n})</b> excede el máximo permitido de <b>{m}</b>.', // Mensaje de error cuando se seleccionan demasiados archivos
-            msgInvalidFileExtension: 'Extensión no válida para el archivo "{name}". Solo se permiten archivos "{extensions}".', // Mensaje de error cuando la extensión del archivo no es válida
-            msgValidationError: 'Error de validación', // Mensaje de error general de validación
-            dropZoneEnabled: true, // Habilitar la zona de arrastrar y soltar
-            dropZoneTitle: 'Arrastra y suelta archivos aquí...', // Personalizar el texto de la zona de arrastrar y soltar
-        });
-        $("#logo_equ_edi").fileinput({
-            allowedFileExtensions: ["jpg", "jpeg", "png"],
-            showUpload: false,
-            maxFileSize: 2048,
-            language: 'es', // Cambiar el idioma a español
-            browseLabel: 'Seleccionar', // Texto para el botón de seleccionar archivo
-            removeLabel: 'Eliminar', // Texto para el botón de eliminar archivo
-            cancelLabel: 'Cancelar', // Texto para el botón de cancelar
-            uploadLabel: 'Subir', // Texto para el botón de subir
-            msgPlaceholder: 'Seleccionar archivo...', // Texto de placeholder
-            msgSizeTooLarge: 'El archivo "{name}" (<b>{size} KB</b>) excede el tamaño máximo permitido de <b>{maxSize} KB</b>.', // Mensaje de error cuando el archivo es demasiado grande
-            msgFilesTooMany: 'El número de archivos seleccionados <b>({n})</b> excede el máximo permitido de <b>{m}</b>.', // Mensaje de error cuando se seleccionan demasiados archivos
-            msgInvalidFileExtension: 'Extensión no válida para el archivo "{name}". Solo se permiten archivos "{extensions}".', // Mensaje de error cuando la extensión del archivo no es válida
-            msgValidationError: 'Error de validación', // Mensaje de error general de validación
-            dropZoneEnabled: true, // Habilitar la zona de arrastrar y soltar
-            dropZoneTitle: 'Arrastra y suelta archivos aquí...', // Personalizar el texto de la zona de arrastrar y soltar
-        });
 </script>
 
-<script>
-$(document).ready(function() {
-  // Select2 para modal agregar (ya tienes)
-  $('#categorias').select2({
-    placeholder: "Selecciona categorías",
-    allowClear: true,
-    width: '100%',
-    dropdownParent: $('#modalAgregarEquipo')
-  });
+<style>
+    /* Aplica color a todos los theads de la tabla, original y clonado */
+    #tbl_equipos th,
+    div.dataTables_scrollHead th {
+        background-color: #343a40 !important;
+        color: #fff !important;
+    }
+</style>
 
-  // Select2 para modal editar (nuevo)
-  $('#categorias_edit').select2({
-    placeholder: "Selecciona categorías",
-    allowClear: true,
-    width: '100%',
-    dropdownParent: $('#modalEditarEquipo')
-  });
-
-  // Opcional: cerrar dropdown al seleccionar
-  $('#categorias').on('select2:select', function () { $(this).select2('close'); });
-  $('#categorias_edit').on('select2:select', function () { $(this).select2('close'); });
-});
-
-
-</script>
 {% endblock %}

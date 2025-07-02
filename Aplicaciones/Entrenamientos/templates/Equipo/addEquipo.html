@@ -1,0 +1,135 @@
+    {% extends 'admin_dashboard.html' %}
+
+    {% block title %}Registrar Nuevo Equipo{% endblock %}
+
+    {% block content %}
+
+    <ul class="breadcrumb mb-3">
+        <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'list_equipo' %}">Equipos</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Registrar Nuevo Equipo</li>
+    </ul>
+
+    <div class="container mt-5">
+        <h2 class="text-center">Registrar Nuevo Equipo</h2>
+        <form method="POST" action="{% url 'add_equipo' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label for="nombre_equ" class="form-label">Nombre del Equipo <span class="text-danger">*</span></label>
+                    <input type="text" name="nombre_equ" id="nombre_equ" class="form-control" required>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label for="fecha_fundado_equ" class="form-label">Fecha Fundado</label>
+                    <input type="date" name="fecha_fundado_equ" id="fecha_fundado_equ" class="form-control">
+                </div>
+                <div class="mb-3 col-md-12">
+                    <label for="fk_id_temp" class="form-label">Selecciona una Temporada</label>
+                    <select id="fk_id_temp" name="fk_id_temp" class="form-select" required>
+                        <option value="" disabled selected>Selecciona una temporada</option>
+                        {% for temporada in temporadas %}
+                            <option value="{{ temporada.id_temp }}">{{ temporada.nombre_temp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3 col-md-12">
+                    <label for="fk_id_ent" class="form-label">Selecciona un Entrenador</label>
+                    <select id="fk_id_ent" name="fk_id_ent" class="form-select" required>
+                        <option value="" disabled selected>Selecciona un entrenador</option>
+                        {% for entrenador in entrenadores %}
+                            <option value="{{ entrenador.id_ent }}">{{ entrenador.fk_id_usu.nombres_usu }} {{ entrenador.fk_id_usu.primer_apellido_usu }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3 col-md-12">
+                    <label for="categorias" class="form-label">Categorías</label>
+                    <select id="categorias" name="categorias" class="form-select" multiple="multiple">
+                        {% for categoria in categorias %}
+                            <option value="{{ categoria.id_cat }}">{{ categoria.nombre_cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3 col-md-12">
+                    <label for="descripcion_equ" class="form-label">Descripción</label>
+                    <textarea name="descripcion_equ" id="descripcion_equ" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3 col-md-12">
+                    <label for="logo_equ" class="form-label">Logo del Equipo</label>
+                    <input type="file" name="logo_equ" id="logo_equ" class="form-control" accept="image/png, image/jpeg, image/jpg">
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-success me-2">
+                    <i class="bi bi-check-lg me-1"></i> Registrar
+                </button>
+                <a href="{% url 'list_equipo' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-lg me-1"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Inicializar Select2 para el campo de categorías
+            $('#categorias').select2({
+                placeholder: "Selecciona las categorías",
+                allowClear: true,
+                width: '100%',
+            });
+
+            // Validación del formulario
+            $("form").validate({
+                errorClass: 'is-invalid',
+                validClass: 'is-valid',
+                rules: {
+                    nombre_equ: {
+                        required: true,
+                        minlength: 3
+                    },
+                    categorias: {
+                        required: true,
+                        minlength: 1
+                    }
+                },
+                messages: {
+                    nombre_equ: {
+                        required: "El nombre del equipo es obligatorio.",
+                        minlength: "Debe tener al menos 3 caracteres."
+                    },
+                    categorias: {
+                        required: "Debe seleccionar al menos una categoría.",
+                        minlength: "Debe seleccionar al menos una categoría."
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- Archivo CDN Fileinput para la carga del logo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.4/css/fileinput.min.css" integrity="sha512-yDVMONIXJPPAoULZ92Ygngsn8ZUGB4ejm6fCc6q9ZvdH8blFAOgg75XZSEaAJ5m4E/yPI1BAi5fF2axMHVuZ5w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.4/js/fileinput.min.js" integrity="sha512-0wQvB58Ha5coWmcgtg4f11CTSSxfrfLClUp9Vy0qhzYzCZDSnoB4Vhu5JXJFs7rU24LE6JsH+6hpP7vQ22lk5w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        // Inicialización del fileinput para el logo
+        $("#logo_equ").fileinput({
+            allowedFileExtensions: ["jpg", "jpeg", "png"],
+            showUpload: false,
+            maxFileSize: 5000,
+            language: 'es', // Cambiar idioma a español
+            browseLabel: 'Seleccionar',
+            removeLabel: 'Eliminar',
+            cancelLabel: 'Cancelar',
+            uploadLabel: 'Subir',
+            msgPlaceholder: 'Seleccionar archivo...',
+            msgSizeTooLarge: 'El archivo "{name}" (<b>{size} KB</b>) excede el tamaño máximo permitido de <b>{maxSize} KB</b>.',
+            msgFilesTooMany: 'El número de archivos seleccionados <b>({n})</b> excede el máximo permitido de <b>{m}</b>.',
+            msgInvalidFileExtension: 'Extensión no válida para el archivo "{name}". Solo se permiten archivos "{extensions}".',
+            dropZoneEnabled: true,
+            dropZoneTitle: 'Arrastra y suelta archivos aquí...',
+        });
+    </script>
+
+    {% endblock %}

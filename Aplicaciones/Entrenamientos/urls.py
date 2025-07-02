@@ -54,7 +54,7 @@ urlpatterns = [
     # -------------------------------CRUD JUGADORES-----------------------------
     path('jugadores/', views.list_jugadores, name='list_jugadores'),
     path('jugadores/add/', views.add_jugador, name='add_jugador'),
-    path('jugadores/editar/', views.edit_jugador, name='edit_jugador'),
+    path('jugadores/editar/<int:pk>/', views.edit_jugador, name='edit_jugador'),
     path('jugadores/delete/<int:pk>/', views.delete_jugador, name='delete_jugador'),
 
     # -------------------------------CRUD EVALUACIONES-----------------------------
@@ -63,12 +63,57 @@ urlpatterns = [
     path('api/get_parametros/<int:evaluacion_id>/', views.get_parametros, name='get_parametros'),
     path('tipos_evaluaciones/edit/<int:pk>/', views.edit_tipoevaluacion, name='edit_tipoevaluacion'),
     path('tipos_evaluaciones/delete/<int:pk>/', views.delete_tipoevaluacion, name='delete_tipoevaluacion'),
-    
-    # -------------------------------CRUD PRUEBAS-----------------------------
-    path('pruebas/', views.list_pruebas, name='list_pruebas'),
-    path('pruebas/add/', views.add_prueba, name='add_prueba'),
-    path('pruebas/edit/<int:pk>/', views.edit_prueba, name='edit_prueba'),
 
-    path('pruebas/delete/<int:pk>/', views.delete_prueba, name='delete_prueba'),
+
+    # ------------------------------CRUD UNIDADES ESCALA-------------------------
+    path('unidades/', views.list_unidades, name='list_unidades'),
+    path('unidades/add/', views.add_unidad, name='add_unidad'),
+    path('unidades/edit/<int:pk>/', views.edit_unidad, name='edit_unidad'),
+    path('unidades/delete/<int:pk>/', views.delete_unidad, name='delete_unidad'),
+
+    #-----------------------------------CRUD RUBRICAS-------------------------
+    path('rubricas/', views.list_rubricas, name='list_rubricas'),
+    path('rubricas/view/<int:pk>/', views.view_rubrica, name='view_rubrica'),
+    path('rubricas/add/', views.add_rubrica, name='add_rubrica'),
+    path('ajax/parametros_por_tipo/', views.ajax_parametros_por_tipo, name='ajax_parametros_por_tipo'),
+    path('rubricas/edit/<int:pk>/', views.edit_rubrica, name='edit_rubrica'),
+    path('rubricas/delete/<int:pk>/', views.delete_rubrica, name='delete_rubrica'),
+
+
+    #------------------------------------------CRUD PRUEBAS ---------------------------
+    path('pruebas/', views.list_pruebas, name='list_pruebas'),
+    path('pruebas/<int:id_pru>/detalle/', views.detalle_prueba, name='detalle_prueba'),
+    path('pruebas/agregar/', views.add_prueba, name='add_prueba'),
+    path('ajax/parametros-rubrica/', views.ajax_parametros_rubrica, name='ajax_parametros_rubrica'),
+    path('pruebas/<int:id_pru>/editar/', views.edit_prueba, name='edit_prueba'),
+    path('pruebas/<int:id_pru>/eliminar/', views.delete_prueba, name='delete_prueba'),
+
+    #------------------------------------------CRUD NOTAS EQUIPO ---------------------------
+    path('promedios-guardados-equipo/', views.promedios_jugadores_equipo, name='promedios_guardados_equipo'),
+
+
+
+    #------------------------------------------DASHBOARD ---------------------------
+    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/entrenador/', views.dashboard_entrenador, name='dashboard_entrenador'),
+    path('dashboard/jugador/', views.dashboard_jugador, name='dashboard_jugador'),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #--------------------------------------------------------------------------------------------------
+
+   
 
 ]

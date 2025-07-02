@@ -1,67 +1,179 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Iniciar Sesión | Sistema de Entrenamientos</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
-    <style>
-        .password-wrapper {
-            position: relative;
-        }
-        .password-toggle {
-            position: absolute;
-            top: 70%;
-            right: 15px;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #6c757d;
-            font-size: 1.3rem;
-        }
-        .password-toggle:hover {
-            color: #000;
-        }
-    </style>
-</head>
-<body class="bg-light">
+{% load static %}
+<!doctype html>
+<html lang="en" data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" dir="ltr" data-pc-theme="light">
+  <!-- [Head] start -->
+
+  <head>
+    <title>Login | Sistema de Entrenamientos</title>
+    <!-- [Meta] -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Login form with Bootstrap 5 framework." />
+    <meta name="keywords" content="Login, Bootstrap, Admin, Template" />
+    <meta name="author" content="CodedThemes" />
+
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- iziToast (Notificaciones) -->
+    <link href="https://cdn.jsdelivr.net/npm/izitoast/dist/css/iziToast.min.css" rel="stylesheet">
+
     
 
-    <div class="container d-flex align-items-center justify-content-center" style="min-height: 90vh;">
-        <div class="card shadow-lg border-0 rounded-4 p-4" style="width: 100%; max-width: 420px;">
-            <div class="text-center mb-4">
-                <h3 class="fw-bold text-primary">Bienvenido</h3>
-                <p class="text-muted">Por favor, inicia sesión para continuar</p>
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- jQuery Validate -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+
+    <!-- fileinput-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.4/css/fileinput-rtl.min.css" integrity="sha512-FsktTEI0am2aVFo8xjeBVrDhzxVKbDMaTmYVcqZH4tOqCK+1Isjm40mevYqxBXLUl8AaeCkXh6/1E9xhZ5lnVQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.4/js/fileinput.min.js" integrity="sha512-0wQvB58Ha5coWmcgtg4f11CTSSxfrfLClUp9Vy0qhzYzCZDSnoB4Vhu5JXJFs7rU24LE6JsH+6hpP7vQ22lk5w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/5.5.4/css/fileinput.min.css" integrity="sha512-yDVMONIXJPPAoULZ92Ygngsn8ZUGB4ejm6fCc6q9ZvdH8blFAOgg75XZSEaAJ5m4E/yPI1BAi5fF2axMHVuZ5w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- CSS de Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    
+
+    <!-- JS de Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- [Favicon] icon -->
+    <link rel="icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon" />
+    <!-- [Font] Family -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'plantilla login/assets/fonts/phosphor/duotone/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'plantilla login/assets/fonts/tabler-icons.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'plantilla login/assets/fonts/feather.css' %}" />
+    <link rel="stylesheet" href="{% static 'plantilla login/assets/fonts/fontawesome.css' %}" />
+    <link rel="stylesheet" href="{% static 'plantilla login/assets/fonts/material.css' %}" />
+    <link rel="stylesheet" href="{% static 'plantilla login/assets/css/style.css' %}" id="main-style-link" />
+
+    <style>
+      .password-wrapper {
+        position: relative;
+      }
+
+      .password-wrapper input[type="password"] {
+        padding-right: 40px; /* Make space for the eye icon */
+      }
+
+      .password-toggle {
+        position: absolute;
+        right: 10px;
+        top: 70%;
+        transform: translateY(-50%);
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <!-- [Head] end -->
+  <!-- [Body] Start -->
+
+  <body>
+    <!-- [ Pre-loader ] start -->
+    <div class="loader-bg fixed inset-0 bg-white dark:bg-themedark-cardbg z-[1034]">
+      <div class="loader-track h-[5px] w-full inline-block absolute overflow-hidden top-0">
+        <div class="loader-fill w-[300px] h-[5px] bg-primary-500 absolute top-0 left-0 animate-[hitZak_0.6s_ease-in-out_infinite_alternate]"></div>
+      </div>
+    </div>
+    <!-- [ Pre-loader ] End -->
+
+    <div class="auth-main relative">
+      <div class="auth-wrapper v1 flex items-center w-full h-full min-h-screen">
+        <div class="auth-form flex items-center justify-center grow flex-col min-h-screen relative p-6 ">
+          
+          <div class="w-full max-w-[350px] relative">
+            
+            <div class="auth-bg ">
+              <span class="absolute top-[-100px] right-[-100px] w-[300px] h-[300px] block rounded-full bg-theme-bg-1 animate-[floating_7s_infinite]"></span>
+              <span class="absolute top-[150px] right-[-150px] w-5 h-5 block rounded-full bg-primary-500 animate-[floating_9s_infinite]"></span>
+              <span class="absolute left-[-150px] bottom-[150px] w-5 h-5 block rounded-full bg-theme-bg-1 animate-[floating_7s_infinite]"></span>
+              <span class="absolute left-[-100px] bottom-[-100px] w-[300px] h-[300px] block rounded-full bg-theme-bg-2 animate-[floating_9s_infinite]"></span>
             </div>
-
-            <form method="post">
-                {% csrf_token %}
-                <!-- CSRF token aquí si usas backend -->
-                <div class="mb-3">
-                    <label for="correo" class="form-label">Correo electrónico</label>
-                    <input type="email" class="form-control" name="correo_usu" id="correo" placeholder="ejemplo@correo.com" required>
+            {% block content %}
+            <div class="card sm:my-12  w-full shadow-none">
+              <div class="card-body !p-10">
+                <div class="text-center mb-8">
+                  <a href="#"><img src="{% static 'plantilla login/assets/images/logo-dark.svg' %}" alt="img" class="mx-auto auth-logo"/></a>
                 </div>
+                <h4 class="text-center font-medium mb-4">Iniciar sesión</h4>
+                <form method="post">
+                  {% csrf_token %}
+                  <div class="mb-3">
+                    <label for="correo_usu" class="form-label">Correo electrónico</label>
+                    <input type="email" class="form-control" name="correo_usu" id="correo_usu" placeholder="ejemplo@correo.com" required>
+                  </div>
 
-                <div class="mb-4 password-wrapper">
+                  <div class="mb-4 password-wrapper">
                     <label for="password" class="form-label">Contraseña</label>
                     <input type="password" class="form-control" name="password" id="password" placeholder="********" required>
                     <i class="bi bi-eye password-toggle" id="togglePassword"></i>
-                </div>
+                  </div>
 
-                <button type="submit" class="btn btn-primary w-100 fw-semibold mb-3">Iniciar sesión</button>
-                <div class="d-flex justify-content-center">
-                    <button type="button" class="btn btn-secondary w-50 fw-semibold" onclick="window.location.href='/'">Cancelar</button>
+                  <div class="flex mt-1 justify-between items-center flex-wrap">
+                    <div class="form-check">
+                      <input class="form-check-input input-primary" type="checkbox" id="customCheckc1" checked="" />
+                      <label class="form-check-label text-muted" for="customCheckc1">Recordarme</label>
+                    </div>
+                    <h6 class="font-normal text-primary-500 mb-0">
+                      <a href="{% url 'password_reset_request' %}">¿Olvidaste tu contraseña?</a>
+                    </h6>
+                  </div>
+                  <div class="mt-4 text-center">
+                    <button type="submit" class="btn btn-primary mx-auto shadow-2xl">Iniciar sesión</button>
+                  </div>
+                </form>
+
+                <div class="flex justify-between items-end flex-wrap mt-4">
+                  <h6 class="font-medium mb-0">¿No tienes cuenta?</h6>
+                  <a href="#" class="text-primary-500">Crear cuenta</a>
                 </div>
-                <div class="text-center mt-3">
-                    <a href="{% url 'password_reset_request' %}" class="text-decoration-none">¿Olvidaste tu contraseña?</a>
-                </div>
-            </form>
+              </div>
+            </div>
+            {% endblock %}
+            
+          </div>
+          
         </div>
+      </div>
     </div>
 
-    <!-- JS -->
+    <!-- [ Main Content ] end -->
+    <!-- Required Js -->
+    <script src="{% static 'plantilla login/assets/js/plugins/simplebar.min.js' %}"></script>
+    <script src="{% static 'plantilla login/assets/js/plugins/popper.min.js' %}"></script>
+    <script src="{% static 'plantilla login/assets/js/icon/custom-icon.js' %}"></script>
+    <script src="{% static 'plantilla login/assets/js/plugins/feather.min.js' %}"></script>
+    <script src="{% static 'plantilla login/assets/js/component.js' %}"></script>
+    <script src="{% static 'plantilla login/assets/js/theme.js' %}"></script>
+    <script src="{% static 'plantilla login/assets/js/script.js' %}"></script>
+
+    <div class="floting-button fixed bottom-[50px] right-[30px] z-[1030]">
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
+
+     <!-- iziToast JS -->
+     <script src="https://cdn.jsdelivr.net/npm/izitoast/dist/js/iziToast.min.js"></script>
+ 
+     <!-- DataTables JS -->
+     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
     <!-- Mostrar/Ocultar contraseña al mantener presionado -->
     <script>
@@ -98,7 +210,36 @@
                 {% endfor %}
             {% endif %}
         });
-        </script>
-        
-</body>
+    </script>
+
+    <script>
+      layout_change('false');
+    </script>
+
+    <script>
+      layout_theme_sidebar_change('dark');
+    </script>
+
+    <script>
+      change_box_container('false');
+    </script>
+
+    <script>
+      layout_caption_change('true');
+    </script>
+
+    <script>
+      layout_rtl_change('false');
+    </script>
+
+    <script>
+      preset_change('preset-1');
+    </script>
+
+    <script>
+      main_layout_change('vertical');
+    </script>
+
+  </body>
+  <!-- [Body] end -->
 </html>

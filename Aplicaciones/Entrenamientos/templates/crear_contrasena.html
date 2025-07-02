@@ -1,4 +1,4 @@
-{% extends "index.html" %}
+{% extends "registration/login.html" %}
 
 {% block title %}Crear Contraseña{% endblock %}
 
@@ -44,9 +44,7 @@
 </div>
 
 
-{% endblock %}
 
-{% block scripts %}
 <script>
   $(document).ready(function () {
     // Validación con jQuery Validate
@@ -87,6 +85,11 @@
         }
     });
 
+    
+});
+
+</script>
+<script>
     // Mostrar/ocultar contraseña
     $(".toggle-password").click(function () {
         const input = $($(this).data("target"));
@@ -99,8 +102,7 @@
             icon.removeClass("bi-eye").addClass("bi-eye-slash");
         }
     });
-});
-
-
 </script>
+
+
 {% endblock %}

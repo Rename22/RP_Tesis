@@ -1,0 +1,203 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Editar Tipo de Evaluación{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Editar Tipo de Evaluación</h2>
+
+    <form method="POST" action="{% url 'edit_tipoevaluacion' tipo.id_tip %}" id="formEditTipoEvaluacion" autocomplete="off" novalidate>
+        {% csrf_token %}
+
+        <!-- Interruptor para Desactivar/Activar el Tipo de Evaluación -->
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="estado_tip" name="estado_tip" {% if tipo.estado_tip %}checked{% endif %} onchange="toggleTipoEvaluacionStatus()">
+            <label class="form-check-label" for="estado_tip">Desactivar/Activar Tipo de Evaluación</label>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="nombre_tip">Nombre del Tipo de Evaluación</label>
+                <input type="text" name="nombre_tip" id="nombre_tip" class="form-control mayuscula" value="{{ tipo.nombre_tip }}" required {% if not tipo.estado_tip %}readonly{% endif %}>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="descripcion_tip">Descripción</label>
+                <textarea name="descripcion_tip" id="descripcion_tip" class="form-control mayuscula" rows="3" {% if not tipo.estado_tip %}readonly{% endif %}>{{ tipo.descripcion_tip }}</textarea>
+            </div>
+        </div>
+
+        <hr>
+        <h5 class="text-center">Parámetros de Evaluación</h5>
+
+        <div class="table-responsive">
+            <table class="table table-bordered" id="detalleTabla">
+                <thead class="table-light">
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Descripción</th>
+                        <th>Acción</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="detalleBody">
+                    {% for parametro in tipo.parametroevaluacion_set.all %}
+                    <tr class="parametro-row" data-estado="{{ parametro.estado_prm }}">
+                        <td>
+                            <input type="text" name="titulo_det[]" class="form-control mayuscula" value="{{ parametro.nombre_prm }}" required {% if not parametro.estado_prm %}readonly{% endif %}>
+                        </td>
+                        <td>
+                            <textarea name="descripcion_det[]" class="form-control mayuscula" rows="2" {% if not parametro.estado_prm %}readonly{% endif %}>{{ parametro.descripcion_prm }}</textarea>
+                        </td>
+                        <td>
+                            <select name="estado_det[]" class="form-control" onchange="toggleParametroStatus(this, '{{ parametro.id_prm }}')" {% if not tipo.estado_tip %}disabled{% endif %}>
+                                <option value="1" {% if parametro.estado_prm %}selected{% endif %}>Activo</option>
+                                <option value="0" {% if not parametro.estado_prm %}selected{% endif %}>Inactivo</option>
+                            </select>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)" {% if not tipo.estado_tip %}disabled{% endif %}>
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                        <input type="hidden" name="detalle_id[]" value="{{ parametro.id_prm }}">
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-primary btn-sm" onclick="agregarFila()">
+                <i class="bi bi-plus-circle"></i> Agregar Parámetro
+            </button>
+        </div>
+
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="{% url 'list_tipoevaluaciones' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Función para agregar dinámicamente más parámetros
+    function agregarFila() {
+        const fila = ` 
+        <tr class="parametro-row">
+            <td><input type="text" name="titulo_det[]" class="form-control mayuscula" required></td>
+            <td><textarea name="descripcion_det[]" class="form-control mayuscula" rows="2"></textarea></td>
+            <td>
+                <select name="estado_det[]" class="form-control" onchange="toggleParametroStatus(this)">
+                    <option value="1">Activo</option>
+                    <option value="0">Inactivo</option>
+                </select>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+        document.getElementById('detalleBody').insertAdjacentHTML('beforeend', fila);
+    }
+
+    // Función para eliminar una fila
+    function eliminarFila(button) {
+        button.closest('tr').remove();
+    }
+
+    // Función para cambiar el estado de un parámetro
+    function toggleParametroStatus(select, id) {
+        const parametroRow = select.closest('tr');
+        const parametroInput = parametroRow.querySelector('input[name="titulo_det[]"]');
+        const parametroTextarea = parametroRow.querySelector('textarea[name="descripcion_det[]"]');
+
+        if (select.value == "1") {
+            parametroInput.removeAttribute('readonly');
+            parametroTextarea.removeAttribute('readonly');
+        } else {
+            parametroInput.setAttribute('readonly', 'readonly');
+            parametroTextarea.setAttribute('readonly', 'readonly');
+        }
+    }
+
+    // Función para activar o desactivar todos los parámetros dependiendo del estado del tipo de evaluación
+    function toggleTipoEvaluacionStatus() {
+        const estadoTipoEvaluacion = document.getElementById('estado_tip').checked;
+        const parametroRows = document.querySelectorAll('.parametro-row');
+
+        parametroRows.forEach(function(row) {
+            const parametroInput = row.querySelector('input[name="titulo_det[]"]');
+            const parametroTextarea = row.querySelector('textarea[name="descripcion_det[]"]');
+            const selectEstado = row.querySelector('select[name="estado_det[]"]');
+            const eliminarButton = row.querySelector('button');
+
+            if (estadoTipoEvaluacion) {
+                parametroInput.removeAttribute('readonly');
+                parametroTextarea.removeAttribute('readonly');
+                selectEstado.disabled = false;
+                eliminarButton.disabled = false;
+            } else {
+                parametroInput.setAttribute('readonly', 'readonly');
+                parametroTextarea.setAttribute('readonly', 'readonly');
+                selectEstado.disabled = true;
+                eliminarButton.disabled = true;
+                selectEstado.value = '0'; // Desactivar parámetro al desactivar el tipo
+            }
+        });
+    }
+
+    // Ejecutamos la función inicial para que se apliquen las condiciones al cargar la página
+    window.onload = toggleTipoEvaluacionStatus;
+
+    // Validación usando jQuery Validate
+    $(document).ready(function () {
+        $("#formEditTipoEvaluacion").validate({
+            errorClass: 'is-invalid',
+            validClass: 'is-valid',
+            errorElement: 'div',
+            errorPlacement: function (error, element) {
+                error.addClass('invalid-feedback');
+                error.insertAfter(element);
+            },
+            rules: {
+                nombre_tip: {
+                    required: true,
+                    minlength: 3
+                },
+                'titulo_det[]': {
+                    required: true,
+                    minlength: 1
+                }
+            },
+            messages: {
+                nombre_tip: {
+                    required: "El nombre del tipo de evaluación es obligatorio.",
+                    minlength: "Debe tener al menos 3 caracteres."
+                },
+                'titulo_det[]': {
+                    required: "Debe agregar al menos un parámetro.",
+                    minlength: "Debe tener al menos un parámetro."
+                },
+            },
+            submitHandler: function(form) {
+                const parametros = document.querySelectorAll('input[name="titulo_det[]"]').length;
+                if (parametros > 0) {
+                    form.submit();
+                } else {
+                    iziToast.error({
+                        title: 'Error',
+                        message: 'Debe agregar al menos un parámetro para poder guardar el tipo de evaluación.',
+                        position: 'topRight'
+                    });
+                }
+            }
+        });
+    });
+
+    // Función para convertir a mayúsculas el texto ingresado o pegado
+    document.addEventListener('input', function(e) {
+        if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) {
+            e.target.value = e.target.value.toUpperCase();
+        }
+    });
+</script>
+
+{% endblock %}

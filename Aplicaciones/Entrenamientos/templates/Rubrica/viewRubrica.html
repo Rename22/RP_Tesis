@@ -1,0 +1,112 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Ver Rúbrica{% endblock %}
+
+{% block content %}
+    <ul class="breadcrumb mb-3">
+        <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'list_rubricas' %}">Rúbricas</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Ver</li>
+    </ul>
+
+    <div class="container mt-5">
+        <h2 class="text-center">Ver Rúbrica</h2>
+
+        <form method="POST" id="formVerRubrica" autocomplete="off" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="mb-3 col-md-4">
+                    <label for="fk_id_prm" class="form-label">Parámetro</label>
+                    <input type="text" class="form-control" value="{{ rubrica.fk_id_prm.nombre_prm }}" disabled>
+                </div>
+                <div class="mb-3 col-md-4">
+                    <label for="fk_id_cat" class="form-label">Categoría</label>
+                    <input type="text" class="form-control" value="{{ rubrica.fk_id_cat.nombre_cat }}" disabled>
+                </div>
+                <div class="mb-3 col-md-4">
+                    <label for="fk_id_unes" class="form-label">Unidad</label>
+                    <input type="text" class="form-control" value="{{ rubrica.fk_id_unes.nombre_unes }}" disabled>
+                </div>
+            </div>
+
+            <hr>
+            <h5 class="text-center">Escalas de la Rúbrica</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle" id="tablaRubrica">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Valor Mínimo</th>
+                            <th>Hasta</th> <!-- Nueva columna con la palabra "Hasta" -->
+                            <th>Valor Máximo</th>
+                            <th>Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyRubrica">
+                        {% for escala in escalas %}
+                            <tr>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" class="form-control" value="{{ escala.valor_min_rub|stringformat:'.2f' }}" disabled>
+                                        <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">Hasta</td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" class="form-control" value="{{ escala.valor_max_rub|stringformat:'.2f' }}" disabled>
+                                        <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="10" class="form-control" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" disabled>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Botón para eliminar -->
+            <div class="text-center mt-3">
+                <a href="{% url 'edit_rubrica' rubrica.id_rub %}" class="btn btn-warning">
+                    <i class="bi bi-pencil-square"></i> Editar
+                </a>
+                <button type="button" class="btn btn-danger" onclick="confirmarEliminacionRubrica({{ rubrica.id_rub }})">
+                    <i class="bi bi-trash"></i> Eliminar
+                </button>
+                <a href="{% url 'list_rubricas' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Formulario de eliminar debe estar fuera del form principal -->
+    <form id="form-eliminar-rubrica-{{ rubrica.id_rub }}" method="POST" action="{% url 'delete_rubrica' rubrica.id_rub %}" style="display:none;">
+        {% csrf_token %}
+    </form>
+
+    <script>
+        // iziToast confirmación para eliminar
+        function confirmarEliminacionRubrica(id) {
+            iziToast.question({
+                timeout: 3000,
+                close: false,
+                overlay: true,
+                displayMode: 'once',
+                title: '¿Estás seguro?',
+                message: 'Esta acción eliminará la rúbrica de forma permanente.',
+                position: 'center',
+                buttons: [
+                    ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
+                        document.getElementById('form-eliminar-rubrica-' + id).submit();
+                        instance.hide({}, toast);
+                    }, true],
+                    ['<button>Cancelar</button>', function (instance, toast) {
+                        instance.hide({}, toast);
+                    }]
+                ]
+            });
+        }
+    </script>
+{% endblock %}

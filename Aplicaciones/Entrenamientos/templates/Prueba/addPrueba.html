@@ -1,0 +1,186 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Agregar Prueba{% endblock %}
+{% block content %}
+
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_pruebas' %}">Pruebas</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Agregar</li>
+</ul>
+
+<div class="container mt-4">
+    <h2 class="text-center mb-3">Registrar Prueba</h2>
+    <form id="formAddPrueba" method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="guardar" value="1">
+        <div class="row">
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_jug" class="form-label">Jugador <span class="text-danger">*</span></label>
+                <select name="fk_id_jug" id="fk_id_jug" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for jug in jugadores %}
+                        <option value="{{ jug.id_jug }}" {% if valores.fk_id_jug == jug.id_jug|stringformat:"s" %}selected{% endif %}>
+                            {{ jug.fk_id_usu.nombres_usu }} {{ jug.fk_id_usu.primer_apellido_usu }}
+                        </option>
+                    {% endfor %}
+                </select>
+                
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_tip" class="form-label">Tipo de Evaluación <span class="text-danger">*</span></label>
+                <select name="fk_id_tip" id="fk_id_tip" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for tipo in tipos %}
+                        <option value="{{ tipo.id_tip }}" {% if valores.fk_id_tip == tipo.id_tip|stringformat:"s" %}selected{% endif %}>
+                            {{ tipo.nombre_tip }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_temp" class="form-label">Temporada <span class="text-danger">*</span></label>
+                <select name="fk_id_temp" id="fk_id_temp" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for temp in temporadas %}
+                        <option value="{{ temp.id_temp }}" {% if valores.fk_id_temp == temp.id_temp|stringformat:"s" %}selected{% endif %}>
+                            {{ temp.nombre_temp }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="macro_pru" class="form-label">Macro <span class="text-danger">*</span></label>
+                <select name="macro_pru" id="macro_pru" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for m in macros %}
+                        <option value="{{ m }}" {% if valores.macro_pru == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fecha_pru" class="form-label">Fecha <span class="text-danger">*</span></label>
+                <input type="date" name="fecha_pru" id="fecha_pru" class="form-control"
+                    value="{{ valores.fecha_pru|default:hoy }}">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="observaciones_pru" class="form-label">Observaciones</label>
+            <textarea name="observaciones_pru" id="observaciones_pru" class="form-control">{{ valores.observaciones_pru }}</textarea>
+        </div>
+
+        <hr>
+        <h5 class="text-center">Parámetros a Evaluar</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Valor Observado</th>
+                        <th>Unidad</th>
+                        <th>Nota Calculada</th>
+                    </tr>
+                </thead>
+                <tbody id="parametros-tbody">
+                    <tr><td colspan="4" class="text-center">Selecciona jugador y tipo de evaluación.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mb-3 text-end">
+            <span class="fw-bold">Promedio: </span>
+            <span id="promedioPrueba" class="text-primary fs-5">0.00</span>
+        </div>
+        <div class="text-center mt-3">
+            <button type="submit" id="btn-guardar-prueba" class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a href="{% url 'list_pruebas' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- JS LIBS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function cargarParametros(){
+    let jug = $('#fk_id_jug').val();
+    let tipo = $('#fk_id_tip').val();
+    $('#parametros-tbody').html('<tr><td colspan="4" class="text-center">Cargando...</td></tr>');
+    if(!jug || !tipo){
+        $('#parametros-tbody').html('<tr><td colspan="4" class="text-center">Selecciona jugador y tipo de evaluación.</td></tr>');
+        $('#btn-guardar-prueba').prop('disabled', true);
+        return;
+    }
+    $.get('{% url "ajax_parametros_rubrica" %}', {jug: jug, tipo: tipo}, function(resp){
+        let html = '';
+        let rubricaFaltante = false;
+        resp.parametros.forEach(function(p){
+            let rubricasJson = JSON.stringify(p.rubricas);
+            if (!p.rubricas.length) rubricaFaltante = true;
+            html += `<tr>
+                <td>
+                    <input type="hidden" name="fk_id_prm[]" value="${p.id_prm}">${p.nombre_prm}
+                    ${!p.rubricas.length ? '<span class="badge bg-danger ms-2">Sin rúbrica</span>' : ''}
+                </td>
+                <td>
+                    <input type="number" name="valor_observado[]" step="0.01" min="0" class="form-control valor-observado" data-prm='${rubricasJson}' ${!p.rubricas.length ? 'disabled' : ''}>
+                </td>
+                <td>
+                    <span>${p.unidad || ''}</span>
+                    <input type="hidden" name="unidad[]" value="${p.unidad || ''}">
+                </td>
+                <td>
+                    <input type="number" name="nota_calculada[]" step="0.01" min="0" max="10" class="form-control nota-calculada" readonly>
+                </td>
+            </tr>`;
+        });
+        if(html == '') html = '<tr><td colspan="4" class="text-center">No hay parámetros para este tipo y categoría.</td></tr>';
+        $('#parametros-tbody').html(html);
+
+        // Si falta rubrica, bloquea guardado y muestra advertencia
+        if(rubricaFaltante || !resp.tienen_todas_rubrica){
+            $('#btn-guardar-prueba').prop('disabled', true);
+            Swal.fire({
+                icon: 'warning',
+                title: '¡Advertencia!',
+                html: 'No todos los parámetros tienen rúbrica definida para la categoría de este jugador.<br>Debes registrar la rúbrica antes de continuar.',
+                confirmButtonText: 'Entendido'
+            });
+        } else {
+            $('#btn-guardar-prueba').prop('disabled', false);
+        }
+    });
+}
+$('#fk_id_jug,#fk_id_tip').on('change', cargarParametros);
+
+$(document).on('input', '.valor-observado', function(){
+    let val = parseFloat($(this).val());
+    let rubricas = $(this).data('prm');
+    let nota = '';
+    if($.isArray(rubricas) && rubricas.length > 0 && !isNaN(val)){
+        rubricas.forEach(function(r){
+            if(val >= parseFloat(r.valor_min_rub) && val <= parseFloat(r.valor_max_rub)){
+                nota = parseFloat(r.puntaje_rub);
+            }
+        });
+    }
+    $(this).closest('tr').find('.nota-calculada').val(nota);
+    calcularPromedio();
+});
+function calcularPromedio(){
+    let sum = 0, count = 0;
+    $('.nota-calculada').each(function(){
+        let v = parseFloat($(this).val());
+        if(!isNaN(v)){
+            sum += v;
+            count++;
+        }
+    });
+    let prom = (count > 0) ? (sum / count).toFixed(2) : "0.00";
+    $('#promedioPrueba').text(prom);
+}
+$(function(){ cargarParametros(); });
+</script>
+{% endblock %}

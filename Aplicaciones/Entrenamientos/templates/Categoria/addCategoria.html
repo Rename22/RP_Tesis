@@ -1,0 +1,91 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Registrar Categoría{% endblock %}
+
+{% block content %}
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_categoria' %}">Categorías</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Registrar</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center">Registrar Nueva Categoría</h2>
+    <form method="POST" id="formAddCategoria" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label for="nombre_cat" class="form-label">Nombre de la Categoría <span class="text-danger">*</span></label>
+                <input type="text" name="nombre_cat" id="nombre_cat" class="form-control mayuscula" required maxlength="50" autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="descripcion_cat" class="form-label">Descripción</label>
+                <input type="text" name="descripcion_cat" id="descripcion_cat" class="form-control mayuscula" maxlength="100" autocomplete="off">
+            </div>
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-1"></i>Registrar
+            </button>
+            <a href="{% url 'list_categoria' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+$(function(){
+    $("#formAddCategoria").validate({
+        rules: {
+            nombre_cat: {
+                required: true,
+                minlength: 3,
+                maxlength: 50
+            },
+            descripcion_cat: {
+                maxlength: 100
+            }
+        },
+        messages: {
+            nombre_cat: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener al menos 3 caracteres.",
+                maxlength: "Máximo 50 caracteres."
+            },
+            descripcion_cat: {
+                maxlength: "Máximo 100 caracteres."
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function(form) {
+            // Forzar mayúsculas antes de enviar
+            $('.mayuscula').each(function() {
+                this.value = this.value.toUpperCase();
+            });
+            form.submit();
+        }
+    });
+
+    // Forzar mayúsculas al escribir o pegar en campos con clase .mayuscula
+    $(document).on('input', '.mayuscula', function () {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(start, end);
+    });
+});
+</script>
+
+<style>
+label.error {
+    color: red;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+input.error, select.error {
+    border: 2px solid red;
+}
+</style>
+{% endblock %}

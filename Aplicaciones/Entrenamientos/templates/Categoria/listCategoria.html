@@ -1,326 +1,151 @@
-  {% extends 'index.html' %}
+{% extends 'admin_dashboard.html' %}
 
-  {% block title %}Lista de Categorías{% endblock %}
+{% block title %}Lista de Categorías{% endblock %}
 
-  {% block content %}
-  <div class="container mt-5">
-      <h2 class="text-center">Lista de Categorías</h2>
-      <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalAgregarCategoria">
-          Crear Nueva Categoría
-      </button>
+{% block content %}
+<ul class="breadcrumb mb-3">
+  <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+  <li class="breadcrumb-item active" aria-current="page">Categorías</li>
+</ul>
 
-      <table id="tbl_categorias" class="table table-bordered table-striped table-hover">
-          <thead class="table-dark">
-              <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th>Fecha de Creación</th>
-                  <th>Fecha de Actualización</th>
-                  <th>Acciones</th>
-              </tr>
-          </thead>
-          <tbody>
-              {% for categoria in categorias %}
-              <tr>
-                  <td>{{ categoria.id }}</td>
-                  <td>{{ categoria.nombre_cat }}</td>
-                  <td>{{ categoria.descripcion_cat }}</td>
-                  <td>
-                      {% if categoria.estado_cat == 'activo' %}
-                          <span class="badge bg-success">Activo</span>
-                      {% else %}
-                          <span class="badge bg-secondary">Inactivo</span>
-                      {% endif %}
-                  </td>
-                  <td>{{ categoria.fecha_creacion_cat|date:"d/m/Y H:i" }}</td>
-                  <td>{{ categoria.fecha_actualizacion_cat|date:"d/m/Y H:i" }}</td>
-                  <td>
-                      <!-- Botón Editar -->
-                      <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                              data-bs-target="#modalEditarCategoria"
-                              data-id="{{ categoria.id }}"
-                              data-nombre="{{ categoria.nombre_cat }}"
-                              data-descripcion="{{ categoria.descripcion_cat }}"
-                              data-estado="{{ categoria.estado_cat }}"
-                              title="Editar">
-                          <i class="bi bi-pencil-square"></i>
-                      </button>
-                      <!-- Botón Eliminar -->
-                      <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionCategoria({{ categoria.id }})" title="Eliminar">
-                        <i class="bi bi-trash"></i>
-                    </button>
-
-                    <!-- Formulario oculto de eliminación -->
-                    <form id="form-eliminar-categoria-{{ categoria.id }}" method="POST" action="{% url 'delete_categoria' categoria.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="id_categoria" value="{{ categoria.id }}">
-                    </form>
-
-                  </td>
-              </tr>
-              {% endfor %}
-          </tbody>
-      </table>
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Lista de Categorías</h2>
+    <a href="{% url 'add_categoria' %}" class="btn btn-success">
+      <i class="bi bi-plus-lg"></i> Crear Nueva Categoría
+    </a>
   </div>
 
-
-
-  <!-- MODAL AGREGAR CATEGORÍA -->
-  <div class="modal fade" id="modalAgregarCategoria" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <form method="POST" action="{% url 'add_categoria' %}">
+  <table class="table table-striped table-bordered align-middle" id="tbl_categorias">
+    <thead class="table-dark text-center">
+      <tr>
+        <th>Id</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Estado</th>
+        <th>Fecha Creación</th>
+        <th>Fecha Actualización</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="text-center">
+      {% for categoria in categorias %}
+      <tr>
+        <td>{{ categoria.id_cat }}</td>
+        <td>{{ categoria.nombre_cat }}</td>
+        <td>{{ categoria.descripcion_cat }}</td>
+        <td>
+          {% if categoria.estado_cat == 'activo' %}
+            <span class="badge bg-success">Activo</span>
+          {% else %}
+            <span class="badge bg-secondary">Inactivo</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if categoria.fecha_creacion_cat %}
+            {{ categoria.fecha_creacion_cat|date:"d/m/Y H:i" }}
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if categoria.fecha_actualizacion_cat %}
+            {{ categoria.fecha_actualizacion_cat|date:"d/m/Y H:i" }}
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'edit_categoria' categoria.id_cat %}" class="btn btn-warning btn-sm" title="Editar">
+            <i class="bi bi-pencil-square"></i>
+          </a>
+          <button class="btn btn-danger btn-sm" onclick="confirmarEliminacionCategoria({{ categoria.id_cat }})" title="Eliminar">
+            <i class="bi bi-trash"></i>
+          </button>
+          <form id="form-eliminar-categoria-{{ categoria.id_cat }}" method="POST" action="{% url 'delete_categoria' categoria.id_cat %}" style="display:none;">
             {% csrf_token %}
-            <div class="modal-header bg-success text-white">
-              <h5 class="modal-title">Registrar Nueva Categoría</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label for="nombre_cat">Nombre de la Categoría</label>
-                <input type="text" name="nombre_cat" class="form-control" required>
-              </div>
-              <div class="mb-3">
-                <label for="descripcion_cat">Descripción</label>
-                <textarea name="descripcion_cat" class="form-control" rows="3"></textarea>
-              </div>
-              
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-success">Guardar</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            </div>
           </form>
-        </div>
-      </div>
-  </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  <!-- MODAL EDITAR CATEGORÍA -->
-  <div class="modal fade" id="modalEditarCategoria" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form method="POST" id="formEditarCategoria">
-                {% csrf_token %}
-                <input type="hidden" name="id_categoria" id="id_categoria" value="">
-
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title">Editar Categoría</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="edit_nombre_cat">Nombre</label>
-                        <input type="text" name="nombre_cat" id="edit_nombre_cat" class="form-control" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit_descripcion_cat">Descripción</label>
-                        <textarea name="descripcion_cat" id="edit_descripcion_cat" class="form-control" rows="3" ></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit_estado_cat">Estado de la Categoría</label>
-                        <select name="estado_cat" id="edit_estado_cat" class="form-select" required>
-                            <option value="activo">Activo</option>
-                            <option value="inactivo">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-warning">Actualizar</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-  </div>
-  <script>
-    $(document).ready(function () {
-        // Inicializar DataTable para la tabla de Categorías
-        $('#tbl_categorias').DataTable({
-            dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
-                '<"row"<"col-12"tr>>' +
-                '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
-            buttons: [
-                {
-                    extend: 'copyHtml5',
-                    text: '<i class="bi bi-clipboard"></i> Copiar',
-                    className: 'btn btn-secondary btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'excelHtml5',
-                    text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'csvHtml5',
-                    text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
-                    className: 'btn btn-info btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'pdfHtml5',
-                    text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-                    className: 'btn btn-danger btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                },
-                {
-                    extend: 'print',
-                    text: '<i class="bi bi-printer"></i> Imprimir',
-                    className: 'btn btn-primary btn-sm',
-                    exportOptions: { columns: ':not(:last-child)' }
-                }
-            ],
-            language: {
-                url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+<!-- DataTable, iziToast, Eliminar -->
+<script>
+$(document).ready(function () {
+    $('#tbl_categorias').DataTable({
+        dom: '<"d-flex justify-content-between align-items-center mb-3"<"dt-buttons"B><"dataTables_filter"f>>' +
+             '<"row"<"col-12"tr>>' +
+             '<"d-flex justify-content-between align-items-center"<"dataTables_info"i><"dataTables_paginate"p>>',
+        buttons: [
+            {
+                extend: 'copyHtml5',
+                text: '<i class="bi bi-clipboard"></i> Copiar',
+                className: 'btn btn-secondary btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                className: 'btn btn-success btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'csvHtml5',
+                text: '<i class="bi bi-file-earmark-spreadsheet"></i> CSV',
+                className: 'btn btn-info btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
+            },
+            {
+                extend: 'print',
+                text: '<i class="bi bi-printer"></i> Imprimir',
+                className: 'btn btn-primary btn-sm',
+                exportOptions: { columns: ':not(:last-child)' }
             }
-        });
+        ],
+        language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+        }
     });
-  </script>
+});
 
-
-  <script>
-
-    document.addEventListener('DOMContentLoaded', function () {
-        // Rellenar datos en el modal de editar
-        const modalEditar = document.getElementById('modalEditarCategoria'); // modalEditarCategoria es el ID del modal
-        modalEditar.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget; // El botón que abrió el modal
-            const id = button.getAttribute('data-id'); // Obtén el ID de la categoría
-            document.getElementById('formEditarCategoria').action = `/categorias/edit/${id}/`; // La acción del formulario de edición
-            document.getElementById('id_categoria').value = id; // Asignamos el ID al campo oculto
-
-            // Asignamos los valores de los atributos data- del botón al modal
-            document.getElementById('edit_nombre_cat').value = button.getAttribute('data-nombre');
-            document.getElementById('edit_descripcion_cat').value = button.getAttribute('data-descripcion');
-            document.getElementById('edit_estado_cat').value = button.getAttribute('data-estado');
-        });
+// iziToast confirmación para eliminar
+function confirmarEliminacionCategoria(id) {
+    iziToast.question({
+        timeout: 3000,
+        close: false,
+        overlay: true,
+        displayMode: 'once',
+        title: '¿Estás seguro?',
+        message: 'Esta acción eliminará la categoría de forma permanente.',
+        position: 'center',
+        buttons: [
+            ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
+                document.getElementById('form-eliminar-categoria-' + id).submit();
+                instance.hide({}, toast);
+            }, true],
+            ['<button>Cancelar</button>', function (instance, toast) {
+                instance.hide({}, toast);
+            }]
+        ]
     });
+}
+</script>
 
-  </script>
-  <script>
-      // Confirmar eliminación con iziToast para categoría
-      function confirmarEliminacionCategoria(id) {
-          iziToast.question({
-              timeout: 3000,
-              close: false,
-              overlay: true,
-              displayMode: 'once',
-              title: '¿Estás seguro?',
-              message: 'Esta acción eliminará la categoría de forma permanente.',
-              position: 'center',
-              buttons: [
-                  ['<button><b>Sí, eliminar</b></button>', function (instance, toast) {
-                      // Cuando se confirma la eliminación, se envía el formulario
-                      document.getElementById('form-eliminar-categoria-' + id).submit();
-                      instance.hide({}, toast); // Cierra el toast
-                  }, true],
-                  ['<button>Cancelar</button>', function (instance, toast) {
-                      instance.hide({}, toast); // Solo cierra el toast si se cancela
-                  }]
-              ]
-          });
-      }
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Seleccionamos los campos de entrada en los formularios de Categoría
-        const inputs = document.querySelectorAll('#modalAgregarCategoria input, #modalAgregarCategoria textarea,' +
-                                                  '#modalEditarCategoria input, #modalEditarCategoria textarea');
-    
-        inputs.forEach(input => {
-            // Convertimos todo el texto a mayúsculas cuando se escribe
-            input.addEventListener('input', () => {
-                input.value = input.value.toUpperCase();
-            });
-        });
-    });
-  </script>
-
-
-  <script>
-    $(document).ready(function () {
-        // Validar formulario CREAR CATEGORÍA
-        $("#modalAgregarCategoria form").validate({
-            errorClass: 'is-invalid',
-            validClass: 'is-valid',
-            errorElement: 'div',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                error.insertAfter(element);
-            },
-            rules: {
-                nombre_cat: {
-                    required: true,
-                    minlength: 3
-                }
-            },
-            messages: {
-                nombre_cat: {
-                    required: "El nombre de la categoría es obligatorio.",
-                    minlength: "Debe tener al menos 3 caracteres."
-                }
-            }
-        });
-
-        // Validar formulario EDITAR CATEGORÍA
-        $("#formEditarCategoria").validate({
-            errorClass: 'is-invalid',
-            validClass: 'is-valid',
-            errorElement: 'div',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                error.insertAfter(element);
-            },
-            rules: {
-                nombre_cat: {
-                    required: true,
-                    minlength: 3
-                },
-                estado_cat: {
-                    required: true
-                }
-            },
-            messages: {
-                nombre_cat: {
-                    required: "El nombre de la categoría es obligatorio.",
-                    minlength: "Debe tener al menos 3 caracteres."
-                },
-                estado_cat: {
-                    required: "Debe seleccionar un estado para la categoría."
-                }
-            }
-        });
-
-        // Script para cargar datos al modal de edición (nombre, descripcion, estado)
-        const modalEditar = document.getElementById('modalEditarCategoria');
-        modalEditar.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            document.getElementById('formEditarCategoria').action = `/categorias/edit/${id}/`; // La acción del formulario de edición
-            document.getElementById('id_categoria').value = id;
-
-            // Asignamos los valores de los atributos data- del botón al modal
-            document.getElementById('edit_nombre_cat').value = button.getAttribute('data-nombre');
-            document.getElementById('edit_descripcion_cat').value = button.getAttribute('data-descripcion');
-            document.getElementById('edit_estado_cat').value = button.getAttribute('data-estado');
-        });
-
-        // Resetear formulario al cerrar el modal
-        $('#modalAgregarCategoria').on('hidden.bs.modal', function () {
-            const form = $("#modalAgregarCategoria form")[0];
-            form.reset();
-            $("#modalAgregarCategoria form").validate().resetForm();
-            $(form).find('.form-control').removeClass('is-valid is-invalid');
-        });
-
-    });
-  </script>
-
-  {% endblock %}
+<style>
+/* Encabezado oscuro fijo como tus otros listados */
+#tbl_categorias th,
+div.dataTables_scrollHead th {
+  background-color: #343a40 !important;
+  color: #fff !important;
+}
+</style>
+{% endblock %}

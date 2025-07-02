@@ -1,0 +1,133 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Registrar Temporada{% endblock %}
+{% block content %}
+
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_temporadas' %}">Temporadas</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Registrar</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center">Registrar Nueva Temporada</h2>
+    <form method="POST" id="formAddTemporada" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <div class="row justify-content-center">
+            <div class="mb-3 col-md-6">
+                <label for="fecha_inicio_temp" class="form-label">Fecha de Inicio <span class="text-danger">*</span></label>
+                <input type="date" name="fecha_inicio_temp" id="fecha_inicio_temp" class="form-control" required>
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="fecha_fin_temp" class="form-label">Fecha de Fin <span class="text-danger">*</span></label>
+                <input type="date" name="fecha_fin_temp" id="fecha_fin_temp" class="form-control" required>
+            </div>
+        </div>
+        <div class="mb-3 row justify-content-center">
+            <div class="col-md-12">
+                <label for="nombre_temp" class="form-label">Nombre de la Temporada <span class="text-danger">*</span></label>
+                <input type="text" name="nombre_temp" id="nombre_temp" class="form-control" readonly required>
+                <!-- Input oculto si decides deshabilitar el visible -->
+            </div>
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-1"></i>Registrar
+            </button>
+            <a href="{% url 'list_temporadas' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function getNombreTemporada(inicio, fin) {
+    if (!inicio || !fin) return '';
+    const meses = [
+        "", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
+        "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+    ];
+    // Formato fechas: "yyyy-mm-dd"
+    let [anio1, mes1] = inicio.split('-');
+    let [anio2, mes2] = fin.split('-');
+    let nombre = `${meses[parseInt(mes1)]}_${anio1}-${meses[parseInt(mes2)]}_${anio2}`;
+    return nombre;
+}
+$(function(){
+    function actualizarNombreTemp() {
+        const inicio = $('#fecha_inicio_temp').val();
+        const fin = $('#fecha_fin_temp').val();
+        let nombre = getNombreTemporada(inicio, fin);
+        $('#nombre_temp').val(nombre);
+    }
+    $('#fecha_inicio_temp, #fecha_fin_temp').on('change', actualizarNombreTemp);
+
+    $("#formAddTemporada").validate({
+        rules: {
+            fecha_inicio_temp: { required: true, date: true },
+            fecha_fin_temp:   { required: true, date: true },
+            nombre_temp:      { required: true }
+        },
+        messages: {
+            fecha_inicio_temp: {
+                required: "La fecha de inicio es obligatoria.",
+                date: "Ingresa una fecha válida."
+            },
+            fecha_fin_temp: {
+                required: "La fecha de fin es obligatoria.",
+                date: "Ingresa una fecha válida."
+            },
+            nombre_temp: {
+                required: "El nombre de la temporada es obligatorio."
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function(form) {
+            const inicio = $('#fecha_inicio_temp').val();
+            const fin = $('#fecha_fin_temp').val();
+            if (inicio && fin && fin < inicio) {
+                iziToast.error({
+                    title: 'Error',
+                    message: 'La fecha de fin no puede ser anterior a la fecha de inicio.',
+                    position: 'topRight'
+                });
+                return false;
+            }
+            if (!$('#nombre_temp').val()) {
+                iziToast.error({
+                    title: 'Error',
+                    message: 'El nombre de la temporada es obligatorio.',
+                    position: 'topRight'
+                });
+                return false;
+            }
+            form.submit();
+        }
+    });
+
+    $('#fecha_inicio_temp, #fecha_fin_temp').on('change', function() {
+        const inicio = $('#fecha_inicio_temp').val();
+        const fin = $('#fecha_fin_temp').val();
+        if (inicio && fin && fin < inicio) {
+            $('#fecha_fin_temp').addClass('error');
+        } else {
+            $('#fecha_fin_temp').removeClass('error');
+        }
+    });
+});
+</script>
+
+<style>
+label.error {
+    color: red;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+input.error,
+select.error {
+    border: 2px solid red;
+}
+</style>
+{% endblock %}

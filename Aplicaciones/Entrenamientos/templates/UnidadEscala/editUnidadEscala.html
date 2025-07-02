@@ -1,0 +1,101 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Editar Unidad de Escala{% endblock %}
+{% block content %}
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_unidades' %}">Unidades de Escala</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center">Editar Unidad de Escala</h2>
+    <form method="POST" id="formEditUnidad" action="{% url 'edit_unidad' unidad.id_unes %}" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label for="nombre_unes" class="form-label">Nombre de la Unidad <span class="text-danger">*</span></label>
+                <input type="text" name="nombre_unes" id="nombre_unes" class="form-control mayuscula" value="{{ unidad.nombre_unes }}" required maxlength="50" autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="descripcion_unes" class="form-label">Descripción</label>
+                <input type="text" name="descripcion_unes" id="descripcion_unes" class="form-control mayuscula" value="{{ unidad.descripcion_unes }}" maxlength="100" autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="estado_unes" class="form-label">Estado <span class="text-danger">*</span></label>
+                <select name="estado_unes" id="estado_unes" class="form-select" required>
+                    <option value="True" {% if unidad.estado_unes %}selected{% endif %}>Activo</option>
+                    <option value="False" {% if not unidad.estado_unes %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-warning me-2">
+                <i class="bi bi-pencil-square me-1"></i>Actualizar
+            </button>
+            <a href="{% url 'list_unidades' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+$(function() {
+    $("#formEditUnidad").validate({
+        rules: {
+            nombre_unes: {
+                required: true,
+                minlength: 2,
+                maxlength: 50
+            },
+            descripcion_unes: {
+                maxlength: 100
+            },
+            estado_unes: {
+                required: true
+            }
+        },
+        messages: {
+            nombre_unes: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener al menos 2 caracteres.",
+                maxlength: "Máximo 50 caracteres."
+            },
+            descripcion_unes: {
+                maxlength: "Máximo 100 caracteres."
+            },
+            estado_unes: {
+                required: "Selecciona un estado."
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function(form) {
+            $('.mayuscula').each(function() {
+                this.value = this.value.toUpperCase();
+            });
+            form.submit();
+        }
+    });
+
+    $(document).on('input', '.mayuscula', function () {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(start, end);
+    });
+});
+</script>
+
+<style>
+label.error {
+    color: red;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+input.error, select.error {
+    border: 2px solid red;
+}
+</style>
+{% endblock %}

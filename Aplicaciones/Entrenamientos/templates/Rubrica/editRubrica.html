@@ -1,0 +1,129 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Editar Rúbrica{% endblock %}
+
+{% block content %}
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_rubricas' %}">Rúbricas</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center">Editar Rúbrica</h2>
+    <form method="POST" id="formEditRubrica" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_prm" class="form-label">Parámetro <span class="text-danger">*</span></label>
+                <select name="fk_id_prm" id="fk_id_prm" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for prm in parametros %}
+                    <option value="{{ prm.id_prm }}" {% if rubrica.fk_id_prm.id_prm == prm.id_prm %}selected{% endif %}>{{ prm.nombre_prm }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_cat" class="form-label">Categoría <span class="text-danger">*</span></label>
+                <select name="fk_id_cat" id="fk_id_cat" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id_cat }}" {% if rubrica.fk_id_cat.id_cat == cat.id_cat %}selected{% endif %}>{{ cat.nombre_cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3 col-md-4">
+                <label for="fk_id_unes" class="form-label">Unidad <span class="text-danger">*</span></label>
+                <select name="fk_id_unes" id="fk_id_unes" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for unes in unidades %}
+                    <option value="{{ unes.id_unes }}" data-unidad="{{ unes.nombre_unes }}" {% if rubrica.fk_id_unes.id_unes == unes.id_unes %}selected{% endif %}>{{ unes.nombre_unes }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <hr>
+        <h5 class="text-center">Escalas de la Rúbrica</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle" id="tablaRubrica">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th>Valor Mínimo</th>
+                        <th></th> 
+                        <th>Valor Máximo</th>
+                        <th>Puntaje</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyRubrica">
+                    {% for escala in escalas %}
+                    <tr>
+                        <td>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" name="valor_min_rub[]" class="form-control" value="{{ escala.valor_min_rub|stringformat:'.2f' }}" required>
+                                <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                            </div>
+                        </td>
+                        <td class="text-center">Hasta</td>
+                        <td>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="0" name="valor_max_rub[]" class="form-control" value="{{ escala.valor_max_rub|stringformat:'.2f' }}" required>
+                                <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="number" step="0.01" min="0" max="10" name="puntaje_rub[]" class="form-control" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" required>
+                            <!-- Ahora solo se muestra el campo de puntaje sin duplicación -->
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-center mt-3">
+            <button type="submit" class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-1"></i>Actualizar
+            </button>
+            <a href="{% url 'list_rubricas' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+            <button type="button" class="btn btn-danger ms-2" onclick="confirmarEliminacionRubrica({{ rubrica.id_rub }})">
+                <i class="bi bi-trash"></i> Eliminar Rúbrica
+            </button>
+        </div>
+    </form>
+</div>
+
+<form id="form-eliminar-rubrica-{{ rubrica.id_rub }}" method="POST" action="{% url 'delete_rubrica' rubrica.id_rub %}" style="display:none;">
+    {% csrf_token %}
+</form>
+
+<script>
+    $('#fk_id_unes').on('change', function() {
+        let unidad = $(this).find(':selected').data('unidad');
+        $('.unit-span').text(unidad);  
+    });
+</script>
+
+{% endblock %}
+
+<style>
+    .input-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .input-group .form-control {
+        flex-grow: 1;
+    }
+
+    .input-group .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+    }
+
+    .text-center {
+        font-weight: bold;
+        font-size: 16px;
+    }
+</style>

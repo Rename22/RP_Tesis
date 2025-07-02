@@ -1,0 +1,73 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Promedios Guardados{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h3 class="text-center mb-4 fw-bold">
+        Promedios Guardados - {{ equipo_nombre }}
+    </h3>
+    <form method="get" class="row g-2 justify-content-center mb-4">
+        <div class="col-md-5">
+            <select name="temporada" class="form-select" onchange="this.form.submit()" required>
+                <option value="">Selecciona temporada</option>
+                {% for t in temporadas %}
+                    <option value="{{ t.id_temp }}" {% if temporada_actual == t.id_temp %}selected{% endif %}>
+                        {{ t.nombre_temp }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="macro" class="form-select" onchange="this.form.submit()">
+                <option value="ambos" {% if macro_filtro == 'ambos' %}selected{% endif %}>Macro 1 y Macro 2</option>
+                <option value="MACRO 1" {% if macro_filtro == 'MACRO 1' %}selected{% endif %}>Macro 1</option>
+                <option value="MACRO 2" {% if macro_filtro == 'MACRO 2' %}selected{% endif %}>Macro 2</option>
+            </select>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped text-center align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Jugador</th>
+                    <th>Macro</th>
+                    {% for tipo in tipos %}
+                        <th>{{ tipo.nombre_tip|upper }}</th>
+                    {% endfor %}
+                    <th>Promedio</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for fila in datos %}
+                <tr>
+                    <td>{{ fila.jugador.fk_id_usu.nombres_usu }} {{ fila.jugador.fk_id_usu.primer_apellido_usu }}</td>
+                    <td>{{ fila.macro }}</td>
+                    {% for tipo in fila.tipos %}
+                        <td>
+                            {% if tipo.nota == "0.00" %}
+                                <span class="text-muted">0</span>
+                            {% else %}
+                                {{ tipo.nota }}
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td>
+                        {% if fila.promedio_general == "0.00" %}
+                            <span class="text-muted">0</span>
+                        {% else %}
+                            <strong>{{ fila.promedio_general }}</strong>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not datos %}
+                <tr>
+                    <td colspan="{{ tipos|length|add:'3' }}" class="text-center text-danger py-4">
+                        <strong>Seleccione una temporada y/o macro para ver resultados.</strong>
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

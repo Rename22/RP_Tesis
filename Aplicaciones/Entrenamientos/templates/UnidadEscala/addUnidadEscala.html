@@ -1,0 +1,89 @@
+{% extends 'admin_dashboard.html' %}
+{% block title %}Registrar Unidad de Escala{% endblock %}
+{% block content %}
+<ul class="breadcrumb mb-3">
+    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'list_unidades' %}">Unidades de Escala</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Registrar</li>
+</ul>
+
+<div class="container mt-5">
+    <h2 class="text-center">Registrar Nueva Unidad de Escala</h2>
+    <form method="POST" id="formAddUnidad" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <div class="row">
+            <div class="mb-3 col-md-6">
+                <label for="nombre_unes" class="form-label">Nombre de la Unidad <span class="text-danger">*</span></label>
+                <input type="text" name="nombre_unes" id="nombre_unes" class="form-control mayuscula" required maxlength="50" autocomplete="off">
+            </div>
+            <div class="mb-3 col-md-6">
+                <label for="descripcion_unes" class="form-label">Descripción</label>
+                <input type="text" name="descripcion_unes" id="descripcion_unes" class="form-control mayuscula" maxlength="100" autocomplete="off">
+            </div>
+            
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-1"></i>Registrar
+            </button>
+            <a href="{% url 'list_unidades' %}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+$(function(){
+    $("#formAddUnidad").validate({
+        rules: {
+            nombre_unes: {
+                required: true,
+                minlength: 2,
+                maxlength: 50
+            },
+            descripcion_unes: {
+                maxlength: 100
+            }
+        },
+        messages: {
+            nombre_unes: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener al menos 2 caracteres.",
+                maxlength: "Máximo 50 caracteres."
+            },
+            descripcion_unes: {
+                maxlength: "Máximo 100 caracteres."
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function(form) {
+            $('.mayuscula').each(function() {
+                this.value = this.value.toUpperCase();
+            });
+            form.submit();
+        }
+    });
+
+    $(document).on('input', '.mayuscula', function () {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(start, end);
+    });
+});
+</script>
+
+<style>
+label.error {
+    color: red;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+input.error, select.error {
+    border: 2px solid red;
+}
+</style>
+{% endblock %}
