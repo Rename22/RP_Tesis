@@ -1,0 +1,94 @@
+{% extends 'admin_dashboard.html' %}
+
+{% block title %}Editar Ciclo de Entrenamiento{% endblock %}
+
+{% block content %}
+<ul class="breadcrumb mb-3">
+  <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Inicio</a></li>
+  <li class="breadcrumb-item"><a href="{% url 'list_ciclo' %}">Ciclos de Entrenamiento</a></li>
+  <li class="breadcrumb-item active" aria-current="page">Editar</li>
+</ul>
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Editar Ciclo</h2>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <form method="POST" id="formEditCiclo" action="{% url 'edit_ciclo' ciclo.id_ciclo %}" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="id_ciclo" value="{{ ciclo.id_ciclo }}">
+        <div class="mb-3">
+          <label for="nombre_ciclo" class="form-label">Nombre del Ciclo <span class="text-danger">*</span></label>
+          <input type="text" name="nombre_ciclo" id="nombre_ciclo" class="form-control mayuscula" value="{{ ciclo.nombre_ciclo }}" required maxlength="100" autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label for="estado_ciclo" class="form-label">Estado <span class="text-danger">*</span></label>
+          <select name="estado_ciclo" id="estado_ciclo" class="form-select" required>
+            <option value="True" {% if ciclo.estado_ciclo %}selected{% endif %}>Activo</option>
+            <option value="False" {% if not ciclo.estado_ciclo %}selected{% endif %}>Inactivo</option>
+          </select>
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-warning me-2">
+            <i class="bi bi-pencil-square me-1"></i>Actualizar
+          </button>
+          <a href="{% url 'list_ciclo' %}" class="btn btn-secondary">
+            <i class="bi bi-x-lg me-1"></i>Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+$(function(){
+    $("#formEditCiclo").validate({
+        rules: {
+            nombre_ciclo: {
+                required: true,
+                minlength: 3,
+                maxlength: 100
+            }
+        },
+        messages: {
+            nombre_ciclo: {
+                required: "Este campo es obligatorio.",
+                minlength: "Debe tener al menos 3 caracteres.",
+                maxlength: "Máximo 100 caracteres."
+            }
+        },
+        errorElement: "label",
+        errorClass: "error",
+        submitHandler: function(form) {
+            // Forzar mayúsculas antes de enviar el formulario
+            $('.mayuscula').each(function() {
+                this.value = this.value.toUpperCase();  // Convierte el valor a mayúsculas
+            });
+            form.submit();
+        }
+    });
+
+    // Forzar mayúsculas al escribir o pegar en campos con clase .mayuscula
+    $(document).on('input', '.mayuscula', function () {
+        let start = this.selectionStart;
+        let end = this.selectionEnd;
+        this.value = this.value.toUpperCase(); // Convierte a mayúsculas mientras el usuario escribe
+        this.setSelectionRange(start, end);
+    });
+});
+
+</script>
+
+<style>
+label.error {
+    color: red;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+input.error, select.error {
+    border: 2px solid red;
+}
+</style>
+
+{% endblock %}

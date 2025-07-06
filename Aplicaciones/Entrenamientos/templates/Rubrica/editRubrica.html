@@ -13,7 +13,20 @@
     <h2 class="text-center">Editar Rúbrica</h2>
     <form method="POST" id="formEditRubrica" autocomplete="off" novalidate>
         {% csrf_token %}
+        
+        <!-- Campo oculto para indicar el tipo de rúbrica -->
+        <input type="hidden" id="tipo_rubrica" name="tipo_rubrica" value="{% if es_cualitativa %}cualitativa{% else %}cuantitativa{% endif %}">
+        
         <div class="row">
+            <div class="mb-3 col-md-4">
+                <label for="tipo_eval" class="form-label">Tipo de Evaluación <span class="text-danger">*</span></label>
+                <select name="tipo_eval" id="tipo_eval" class="form-select" required>
+                    <option value="">Seleccionar</option>
+                    {% for t in tipos %}
+                        <option value="{{ t.id_tip }}" {% if rubrica.fk_id_prm.fk_tipo_evaluacion.id_tip == t.id_tip %}selected{% endif %}>{{ t.nombre_tip }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="mb-3 col-md-4">
                 <label for="fk_id_prm" class="form-label">Parámetro <span class="text-danger">*</span></label>
                 <select name="fk_id_prm" id="fk_id_prm" class="form-select" required>
@@ -32,52 +45,116 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="mb-3 col-md-4">
+            <div class="mb-3 col-md-4" id="unidad-container" {% if es_cualitativa %}style="display: none;"{% endif %}>
                 <label for="fk_id_unes" class="form-label">Unidad <span class="text-danger">*</span></label>
-                <select name="fk_id_unes" id="fk_id_unes" class="form-select" required>
+                <select name="fk_id_unes" id="fk_id_unes" class="form-select" {% if not es_cualitativa %}required{% endif %}>
                     <option value="">Seleccionar</option>
                     {% for unes in unidades %}
-                    <option value="{{ unes.id_unes }}" data-unidad="{{ unes.nombre_unes }}" {% if rubrica.fk_id_unes.id_unes == unes.id_unes %}selected{% endif %}>{{ unes.nombre_unes }}</option>
+                    <option value="{{ unes.id_unes }}" data-unidad="{{ unes.nombre_unes }}" {% if rubrica.fk_id_unes and rubrica.fk_id_unes.id_unes == unes.id_unes %}selected{% endif %}>{{ unes.nombre_unes }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
         <hr>
-        <h5 class="text-center">Escalas de la Rúbrica</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle" id="tablaRubrica">
-                <thead class="table-light text-center">
-                    <tr>
-                        <th>Valor Mínimo</th>
-                        <th></th> 
-                        <th>Valor Máximo</th>
-                        <th>Puntaje</th>
-                    </tr>
-                </thead>
-                <tbody id="tbodyRubrica">
-                    {% for escala in escalas %}
-                    <tr>
-                        <td>
-                            <div class="input-group">
-                                <input type="number" step="0.01" min="0" name="valor_min_rub[]" class="form-control" value="{{ escala.valor_min_rub|stringformat:'.2f' }}" required>
-                                <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
-                            </div>
-                        </td>
-                        <td class="text-center">Hasta</td>
-                        <td>
-                            <div class="input-group">
-                                <input type="number" step="0.01" min="0" name="valor_max_rub[]" class="form-control" value="{{ escala.valor_max_rub|stringformat:'.2f' }}" required>
-                                <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <input type="number" step="0.01" min="0" max="10" name="puntaje_rub[]" class="form-control" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" required>
-                            <!-- Ahora solo se muestra el campo de puntaje sin duplicación -->
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        
+        <!-- RÚBRICA CUANTITATIVA -->
+        <div id="rubrica-cuantitativa" {% if es_cualitativa %}style="display: none;"{% endif %}>
+            <h5 class="text-center">Escalas de la Rúbrica</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle" id="tablaRubrica">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Valor Mínimo</th>
+                            <th></th> 
+                            <th>Valor Máximo</th>
+                            <th>Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyRubrica">
+                        {% if not es_cualitativa %}
+                            {% for escala in escalas %}
+                            <tr>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" name="valor_min_rub[]" class="form-control valor-cuantitativo" value="{{ escala.valor_min_rub|stringformat:'.2f' }}" required>
+                                        <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">Hasta</td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" name="valor_max_rub[]" class="form-control valor-cuantitativo" value="{{ escala.valor_max_rub|stringformat:'.2f' }}" required>
+                                        <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="10" name="puntaje_rub[]" class="form-control puntaje-cuantitativo" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" required>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Plantilla vacía para cuando se cambie a cuantitativo -->
+                            <tr style="display: none;" class="template-row">
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" name="valor_min_rub[]" class="form-control valor-cuantitativo" disabled>
+                                        <span class="input-group-text unit-span"></span>
+                                    </div>
+                                </td>
+                                <td class="text-center">Hasta</td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" name="valor_max_rub[]" class="form-control valor-cuantitativo" disabled>
+                                        <span class="input-group-text unit-span"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="10" name="puntaje_rub[]" class="form-control puntaje-cuantitativo" disabled>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RÚBRICA CUALITATIVA -->
+        <div id="rubrica-cualitativa" {% if not es_cualitativa %}style="display: none;"{% endif %}>
+            <h5 class="text-center">Escalas de la Rúbrica Cualitativa</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th width="70%">Rúbrica</th>
+                            <th width="30%">Puntaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyCualitativa">
+                        {% if es_cualitativa %}
+                            {% for escala in escalas %}
+                            <tr>
+                                <td>
+                                    <textarea name="rubrica_cualitativa[]" class="form-control criterio-cualitativo" rows="2" placeholder="Ingrese criterio de evaluación..." required>{{ escala.rubrica_cualitativa }}</textarea>
+                                </td>
+                                <td class="text-center">
+                                    <input type="number" step="0.01" min="0" max="10" name="puntaje_cualitativo[]" class="form-control puntaje-cualitativo" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" readonly>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Plantilla vacía para cuando se cambie a cualitativo -->
+                            <tr style="display: none;" class="template-cualitativa">
+                                <td>
+                                    <textarea name="rubrica_cualitativa[]" class="form-control criterio-cualitativo" rows="2" placeholder="Ingrese criterio de evaluación..." disabled></textarea>
+                                </td>
+                                <td class="text-center">
+                                    <input type="number" step="0.01" min="0" max="10" name="puntaje_cualitativo[]" class="form-control puntaje-cualitativo" disabled readonly>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="text-center mt-3">
@@ -98,14 +175,199 @@
     {% csrf_token %}
 </form>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    $('#fk_id_unes').on('change', function() {
-        let unidad = $(this).find(':selected').data('unidad');
-        $('.unit-span').text(unidad);  
-    });
-</script>
+// Manejar el cambio de tipo de evaluación
+$('#tipo_eval').on('change', function() {
+    let tipoId = $(this).val();
+    $('#fk_id_prm').html('<option value="">Cargando...</option>');
+    
+    if(tipoId) {
+        $.get("{% url 'ajax_parametros_por_tipo' %}", { tipo_id: tipoId }, function(response) {
+            let options = '<option value="">Seleccionar</option>';
+            response.parametros.forEach(function(parametro) {
+                options += `<option value="${parametro.id_prm}">${parametro.nombre_prm}</option>`;
+            });
+            $('#fk_id_prm').html(options);
+            
+            // Mostrar la rúbrica apropiada según el tipo
+            if (response.cualitativa) {
+                // Es cualitativo: ocultar unidad y mostrar rúbrica cualitativa
+                $('#unidad-container').hide();
+                $('#rubrica-cuantitativa').hide();
+                $('#rubrica-cualitativa').show();
+                
+                // Actualizar el campo oculto
+                $('#tipo_rubrica').val('cualitativa');
+                
+                // Limpiar y crear filas cualitativas por defecto
+                crearFilasCualitativas();
+                
+                // Hacer que los campos cualitativos sean requeridos y habilitados
+                $('.criterio-cualitativo').prop('required', true).prop('disabled', false);
+                $('.puntaje-cualitativo').prop('disabled', false);
+                
+                // Remover required de campos cuantitativos y deshabilitarlos
+                $('.valor-cuantitativo').prop('required', false).prop('disabled', true);
+                $('.puntaje-cuantitativo').prop('required', false).prop('disabled', true);
+                
+                // Hacer que el select de unidad no sea requerido
+                $('#fk_id_unes').prop('required', false);
+                
+            } else {
+                // Es cuantitativo: mostrar unidad y rúbrica cuantitativa
+                $('#unidad-container').show();
+                $('#rubrica-cuantitativa').show();
+                $('#rubrica-cualitativa').hide();
+                
+                // Actualizar el campo oculto
+                $('#tipo_rubrica').val('cuantitativa');
+                
+                // Limpiar y crear filas cuantitativas por defecto
+                crearFilasCuantitativas();
+                
+                // Hacer que los campos cuantitativos sean requeridos y habilitados
+                $('.valor-cuantitativo').prop('required', true).prop('disabled', false);
+                $('.puntaje-cuantitativo').prop('required', true).prop('disabled', false);
+                
+                // Remover required de campos cualitativos y deshabilitarlos
+                $('.criterio-cualitativo').prop('required', false).prop('disabled', true);
+                $('.puntaje-cualitativo').prop('disabled', true);
+                
+                // Hacer que el select de unidad sea requerido
+                $('#fk_id_unes').prop('required', true);
+            }
+        });
+    }
+});
 
-{% endblock %}
+// Función para crear filas cuantitativas por defecto
+function crearFilasCuantitativas() {
+    let tbody = $('#tbodyRubrica');
+    tbody.empty();
+    
+    let puntajes = [10.00, 9.00, 8.00, 7.00, 6.00];
+    
+    puntajes.forEach(function(puntaje) {
+        let fila = `
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input type="number" step="0.01" min="0" name="valor_min_rub[]" class="form-control valor-cuantitativo" required>
+                        <span class="input-group-text unit-span"></span>
+                    </div>
+                </td>
+                <td class="text-center">Hasta</td>
+                <td>
+                    <div class="input-group">
+                        <input type="number" step="0.01" min="0" name="valor_max_rub[]" class="form-control valor-cuantitativo" required>
+                        <span class="input-group-text unit-span"></span>
+                    </div>
+                </td>
+                <td>
+                    <input type="number" step="0.01" min="0" max="10" name="puntaje_rub[]" class="form-control puntaje-cuantitativo" value="${puntaje.toFixed(2)}" required>
+                </td>
+            </tr>
+        `;
+        tbody.append(fila);
+    });
+}
+
+// Función para crear filas cualitativas por defecto
+function crearFilasCualitativas() {
+    let tbody = $('#tbodyCualitativa');
+    tbody.empty();
+    
+    let puntajes = [10.00, 9.00, 8.00, 7.00, 6.00];
+    
+    puntajes.forEach(function(puntaje) {
+        let fila = `
+            <tr>
+                <td>
+                    <textarea name="rubrica_cualitativa[]" class="form-control criterio-cualitativo" rows="2" placeholder="Ingrese criterio de evaluación..." required></textarea>
+                </td>
+                <td class="text-center">
+                    <input type="number" step="0.01" min="0" max="10" name="puntaje_cualitativo[]" class="form-control puntaje-cualitativo" value="${puntaje.toFixed(2)}" readonly>
+                </td>
+            </tr>
+        `;
+        tbody.append(fila);
+    });
+}
+
+// Manejar el cambio de unidad de escala (solo para rúbricas cuantitativas)
+$('#fk_id_unes').on('change', function() {
+    let unidad = $(this).find(':selected').data('unidad');
+    $('.unit-span').text(unidad || '');
+});
+
+// Validación del formulario antes de enviar
+$('#formEditRubrica').on('submit', function(e) {
+    let isValid = true;
+    let errorMessage = '';
+    
+    // Verificar si es cualitativo o cuantitativo
+    if ($('#tipo_rubrica').val() === 'cualitativa') {
+        // Validar rúbrica cualitativa
+        $('.criterio-cualitativo:enabled').each(function() {
+            if ($(this).val().trim() === '') {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            errorMessage = 'Por favor, complete todos los criterios de evaluación.';
+        }
+        
+        // Deshabilitar campos cuantitativos antes del envío para que no se envíen
+        $('.valor-cuantitativo').prop('disabled', true);
+        $('.puntaje-cuantitativo').prop('disabled', true);
+        
+    } else {
+        // Validar rúbrica cuantitativa
+        $('.valor-cuantitativo:enabled').each(function() {
+            if ($(this).val() === '') {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            errorMessage = 'Por favor, complete todos los valores de la rúbrica.';
+        }
+        
+        // Deshabilitar campos cualitativos antes del envío para que no se envíen
+        $('.criterio-cualitativo').prop('disabled', true);
+        $('.puntaje-cualitativo').prop('disabled', true);
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert(errorMessage);
+    }
+});
+
+// Inicialización cuando carga la página
+$(document).ready(function() {
+    // Actualizar las unidades si ya hay una seleccionada
+    let unidadSeleccionada = $('#fk_id_unes').find(':selected').data('unidad');
+    if (unidadSeleccionada) {
+        $('.unit-span').text(unidadSeleccionada);
+    }
+});
+
+// Función para confirmar eliminación (debe estar definida globalmente)
+function confirmarEliminacionRubrica(id) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta rúbrica? Esta acción no se puede deshacer.')) {
+        document.getElementById('form-eliminar-rubrica-' + id).submit();
+    }
+}
+</script>
 
 <style>
     .input-group {
@@ -127,3 +389,5 @@
         font-size: 16px;
     }
 </style>
+{% endblock %}
+

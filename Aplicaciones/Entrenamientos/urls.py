@@ -91,10 +91,16 @@ urlpatterns = [
     #------------------------------------------CRUD NOTAS EQUIPO ---------------------------
     path('promedios-guardados-equipo/', views.promedios_jugadores_equipo, name='promedios_guardados_equipo'),
 
+    #------------------------------------------CRUD CICLOS ---------------------------
+    path('ciclos/', views.list_ciclo, name='list_ciclo'),
+    path('ciclos/add/', views.add_ciclo, name='add_ciclo'),
+    path('ciclos/edit/<int:pk>/', views.edit_ciclo, name='edit_ciclo'),
+    path('ciclos/delete/<int:pk>/', views.delete_ciclo, name='delete_ciclo'),
+
 
 
     #------------------------------------------DASHBOARD ---------------------------
-    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/admin/', views.dashboard_admin, name='dashboard_admin'),
     path('dashboard/entrenador/', views.dashboard_entrenador, name='dashboard_entrenador'),
     path('dashboard/jugador/', views.dashboard_jugador, name='dashboard_jugador'),
 

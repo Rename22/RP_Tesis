@@ -50,11 +50,11 @@
                 </select>
             </div>
             <div class="mb-3 col-md-4">
-                <label for="macro_pru" class="form-label">Macro <span class="text-danger">*</span></label>
-                <select name="macro_pru" id="macro_pru" class="form-select" required>
+                <label for="fk_id_ciclo" class="form-label">Ciclo <span class="text-danger">*</span></label>
+                <select name="fk_id_ciclo" id="fk_id_ciclo" class="form-select" required>
                     <option value="">Seleccionar</option>
-                    {% for m in macros %}
-                        <option value="{{ m }}" {% if valores.macro_pru == m %}selected{% endif %}>{{ m }}</option>
+                    {% for c in ciclos %}
+                        <option value="{{ c.id_ciclo }}" {% if valores.fk_id_ciclo == c.id_ciclo %}selected{% endif %}>{{ c.nombre_ciclo }}</option>
                     {% endfor %}
                 </select>
             </div>

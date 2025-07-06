@@ -15,6 +15,8 @@
             <label class="form-check-label" for="estado_tip">Desactivar/Activar Tipo de Evaluación</label>
         </div>
 
+        
+
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="nombre_tip">Nombre del Tipo de Evaluación</label>
@@ -23,6 +25,13 @@
             <div class="col-md-6 mb-3">
                 <label for="descripcion_tip">Descripción</label>
                 <textarea name="descripcion_tip" id="descripcion_tip" class="form-control mayuscula" rows="3" {% if not tipo.estado_tip %}readonly{% endif %}>{{ tipo.descripcion_tip }}</textarea>
+            </div>
+        </div>
+        <div class="form-group mb-3">
+            <label for="cualitativa_tip">¿Evaluación Cualitativa?</label>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="cualitativa_tip" name="cualitativa_tip" {% if tipo.cualitativa_tip %}checked{% endif %}>
+                <label class="form-check-label" for="cualitativa_tip">Activar Evaluación Cualitativa</label>
             </div>
         </div>
 
@@ -78,126 +87,157 @@
 
 <script>
     // Función para agregar dinámicamente más parámetros
-    function agregarFila() {
-        const fila = ` 
-        <tr class="parametro-row">
-            <td><input type="text" name="titulo_det[]" class="form-control mayuscula" required></td>
-            <td><textarea name="descripcion_det[]" class="form-control mayuscula" rows="2"></textarea></td>
-            <td>
-                <select name="estado_det[]" class="form-control" onchange="toggleParametroStatus(this)">
-                    <option value="1">Activo</option>
-                    <option value="0">Inactivo</option>
-                </select>
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        </tr>`;
-        document.getElementById('detalleBody').insertAdjacentHTML('beforeend', fila);
-    }
+function agregarFila() {
+    const fila = ` 
+    <tr class="parametro-row">
+        <td><input type="text" name="titulo_det[]" class="form-control mayuscula" required></td>
+        <td><textarea name="descripcion_det[]" class="form-control mayuscula" rows="2"></textarea></td>
+        <td>
+            <select name="estado_det[]" class="form-control" onchange="toggleParametroStatus(this)">
+                <option value="1" selected>Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+        <input type="hidden" name="detalle_id[]" value="">
+    </tr>`; 
+    document.getElementById('detalleBody').insertAdjacentHTML('beforeend', fila);
+}
 
-    // Función para eliminar una fila
-    function eliminarFila(button) {
+// Función para eliminar una fila
+function eliminarFila(button) {
+    // Confirmación antes de eliminar
+    if (confirm('¿Está seguro que desea eliminar este parámetro?')) {
         button.closest('tr').remove();
     }
+}
 
-    // Función para cambiar el estado de un parámetro
-    function toggleParametroStatus(select, id) {
-        const parametroRow = select.closest('tr');
-        const parametroInput = parametroRow.querySelector('input[name="titulo_det[]"]');
-        const parametroTextarea = parametroRow.querySelector('textarea[name="descripcion_det[]"]');
+// Función para cambiar el estado de un parámetro
+function toggleParametroStatus(select, id) {
+    const parametroRow = select.closest('tr');
+    const parametroInput = parametroRow.querySelector('input[name="titulo_det[]"]');
+    const parametroTextarea = parametroRow.querySelector('textarea[name="descripcion_det[]"]');
 
-        if (select.value == "1") {
-            parametroInput.removeAttribute('readonly');
-            parametroTextarea.removeAttribute('readonly');
-        } else {
-            parametroInput.setAttribute('readonly', 'readonly');
-            parametroTextarea.setAttribute('readonly', 'readonly');
-        }
+    if (select.value == "1") {
+        parametroInput.removeAttribute('readonly');
+        parametroTextarea.removeAttribute('readonly');
+        parametroRow.classList.remove('table-secondary');
+    } else {
+        parametroInput.setAttribute('readonly', 'readonly');
+        parametroTextarea.setAttribute('readonly', 'readonly');
+        parametroRow.classList.add('table-secondary');
+    }
+}
+
+// Función para activar o desactivar todos los parámetros dependiendo del estado del tipo de evaluación
+function toggleTipoEvaluacionStatus() {
+    const estadoTipoEvaluacion = document.getElementById('estado_tip').checked;
+    const parametroRows = document.querySelectorAll('.parametro-row');
+    const agregarButton = document.querySelector('button[onclick="agregarFila()"]');
+    
+    // Habilitamos/deshabilitamos los campos del tipo de evaluación
+    const nombreTip = document.getElementById('nombre_tip');
+    const descripcionTip = document.getElementById('descripcion_tip');
+    
+    if (estadoTipoEvaluacion) {
+        nombreTip.removeAttribute('readonly');
+        descripcionTip.removeAttribute('readonly');
+        agregarButton.disabled = false;
+    } else {
+        nombreTip.setAttribute('readonly', 'readonly');
+        descripcionTip.setAttribute('readonly', 'readonly');
+        agregarButton.disabled = true;
     }
 
-    // Función para activar o desactivar todos los parámetros dependiendo del estado del tipo de evaluación
-    function toggleTipoEvaluacionStatus() {
-        const estadoTipoEvaluacion = document.getElementById('estado_tip').checked;
-        const parametroRows = document.querySelectorAll('.parametro-row');
+    parametroRows.forEach(function(row) {
+        const parametroInput = row.querySelector('input[name="titulo_det[]"]');
+        const parametroTextarea = row.querySelector('textarea[name="descripcion_det[]"]');
+        const selectEstado = row.querySelector('select[name="estado_det[]"]');
+        const eliminarButton = row.querySelector('button[onclick*="eliminarFila"]');
 
-        parametroRows.forEach(function(row) {
-            const parametroInput = row.querySelector('input[name="titulo_det[]"]');
-            const parametroTextarea = row.querySelector('textarea[name="descripcion_det[]"]');
-            const selectEstado = row.querySelector('select[name="estado_det[]"]');
-            const eliminarButton = row.querySelector('button');
-
-            if (estadoTipoEvaluacion) {
+        if (estadoTipoEvaluacion) {
+            // Si el tipo está activo, permitimos editar según el estado individual
+            const estadoIndividual = selectEstado.value == "1";
+            if (estadoIndividual) {
                 parametroInput.removeAttribute('readonly');
                 parametroTextarea.removeAttribute('readonly');
-                selectEstado.disabled = false;
-                eliminarButton.disabled = false;
-            } else {
-                parametroInput.setAttribute('readonly', 'readonly');
-                parametroTextarea.setAttribute('readonly', 'readonly');
-                selectEstado.disabled = true;
-                eliminarButton.disabled = true;
-                selectEstado.value = '0'; // Desactivar parámetro al desactivar el tipo
             }
-        });
-    }
-
-    // Ejecutamos la función inicial para que se apliquen las condiciones al cargar la página
-    window.onload = toggleTipoEvaluacionStatus;
-
-    // Validación usando jQuery Validate
-    $(document).ready(function () {
-        $("#formEditTipoEvaluacion").validate({
-            errorClass: 'is-invalid',
-            validClass: 'is-valid',
-            errorElement: 'div',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                error.insertAfter(element);
-            },
-            rules: {
-                nombre_tip: {
-                    required: true,
-                    minlength: 3
-                },
-                'titulo_det[]': {
-                    required: true,
-                    minlength: 1
-                }
-            },
-            messages: {
-                nombre_tip: {
-                    required: "El nombre del tipo de evaluación es obligatorio.",
-                    minlength: "Debe tener al menos 3 caracteres."
-                },
-                'titulo_det[]': {
-                    required: "Debe agregar al menos un parámetro.",
-                    minlength: "Debe tener al menos un parámetro."
-                },
-            },
-            submitHandler: function(form) {
-                const parametros = document.querySelectorAll('input[name="titulo_det[]"]').length;
-                if (parametros > 0) {
-                    form.submit();
-                } else {
-                    iziToast.error({
-                        title: 'Error',
-                        message: 'Debe agregar al menos un parámetro para poder guardar el tipo de evaluación.',
-                        position: 'topRight'
-                    });
-                }
-            }
-        });
-    });
-
-    // Función para convertir a mayúsculas el texto ingresado o pegado
-    document.addEventListener('input', function(e) {
-        if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) {
-            e.target.value = e.target.value.toUpperCase();
+            selectEstado.disabled = false;
+            eliminarButton.disabled = false;
+        } else {
+            // Si el tipo está inactivo, deshabilitamos todo
+            parametroInput.setAttribute('readonly', 'readonly');
+            parametroTextarea.setAttribute('readonly', 'readonly');
+            selectEstado.disabled = true;
+            eliminarButton.disabled = true;
+            selectEstado.value = '0'; // Desactivar parámetro al desactivar el tipo
         }
     });
+}
+
+// Ejecutamos la función inicial para que se apliquen las condiciones al cargar la página
+window.onload = function() {
+    toggleTipoEvaluacionStatus();
+};
+
+// Validación usando jQuery Validate
+$(document).ready(function () {
+    $("#formEditTipoEvaluacion").validate({
+        errorClass: 'is-invalid',
+        validClass: 'is-valid',
+        errorElement: 'div',
+        errorPlacement: function (error, element) {
+            error.addClass('invalid-feedback');
+            error.insertAfter(element);
+        },
+        rules: {
+            nombre_tip: {
+                required: true,
+                minlength: 3
+            },
+            'titulo_det[]': {
+                required: true,
+                minlength: 1
+            }
+        },
+        messages: {
+            nombre_tip: {
+                required: "El nombre del tipo de evaluación es obligatorio.",
+                minlength: "Debe tener al menos 3 caracteres."
+            },
+            'titulo_det[]': {
+                required: "El título del parámetro es obligatorio.",
+                minlength: "Debe tener al menos 1 carácter."
+            }
+        },
+        submitHandler: function(form) {
+            // Contamos solo las filas que tienen título
+            const parametrosConTitulo = Array.from(document.querySelectorAll('input[name="titulo_det[]"]'))
+                .filter(input => input.value.trim() !== '').length;
+            
+            if (parametrosConTitulo > 0) {
+                form.submit();
+            } else {
+                iziToast.error({
+                    title: 'Error',
+                    message: 'Debe agregar al menos un parámetro para poder guardar el tipo de evaluación.',
+                    position: 'topRight'
+                });
+            }
+        }
+    });
+});
+
+// Función para convertir a mayúsculas el texto ingresado o pegado
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.classList.contains('mayuscula')) {
+        e.target.value = e.target.value.toUpperCase();
+    }
+});
 </script>
 
 {% endblock %}

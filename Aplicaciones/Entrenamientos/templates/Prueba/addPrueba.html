@@ -49,14 +49,15 @@
                 </select>
             </div>
             <div class="mb-3 col-md-4">
-                <label for="macro_pru" class="form-label">Macro <span class="text-danger">*</span></label>
-                <select name="macro_pru" id="macro_pru" class="form-select" required>
-                    <option value="">Seleccionar</option>
-                    {% for m in macros %}
-                        <option value="{{ m }}" {% if valores.macro_pru == m %}selected{% endif %}>{{ m }}</option>
+                <label for="fk_id_ciclo" class="form-label">Ciclo <span class="text-danger">*</span></label>
+                <select name="fk_id_ciclo" id="fk_id_ciclo" class="form-select" required>
+                    <option value="">Seleccionar Ciclo</option>
+                    {% for ciclo in ciclos %}
+                        <option value="{{ ciclo.id_ciclo }}" {% if valores.fk_id_ciclo == ciclo.id_ciclo %}selected{% endif %}>{{ ciclo.nombre_ciclo }}</option>
                     {% endfor %}
                 </select>
             </div>
+            
             <div class="mb-3 col-md-4">
                 <label for="fecha_pru" class="form-label">Fecha <span class="text-danger">*</span></label>
                 <input type="date" name="fecha_pru" id="fecha_pru" class="form-control"
@@ -119,16 +120,39 @@ function cargarParametros(){
         resp.parametros.forEach(function(p){
             let rubricasJson = JSON.stringify(p.rubricas);
             if (!p.rubricas.length) rubricaFaltante = true;
+            
+            // Verificar si es cualitativo
+            let esCualitativo = p.es_cualitativo;
+            
+            // Generar el campo de valor observado
+            let valorObservadoHtml = '';
+            if (esCualitativo) {
+                // SELECT para evaluación cualitativa
+                valorObservadoHtml = `<select name="valor_observado[]" class="form-select valor-observado-cualitativo" data-prm='${rubricasJson}' ${!p.rubricas.length ? 'disabled' : ''}>
+                    <option value="">Seleccionar</option>`;
+                
+                // Agregar las opciones de la rúbrica cualitativa
+                p.rubricas.forEach(function(r) {
+                    valorObservadoHtml += `<option value="${r.rubrica_cualitativa}" data-puntaje="${r.puntaje_rub}">${r.rubrica_cualitativa}</option>`;
+                });
+                
+                valorObservadoHtml += '</select>';
+            } else {
+                // INPUT numérico para evaluación cuantitativa
+                valorObservadoHtml = `<input type="number" name="valor_observado[]" step="0.01" min="0" class="form-control valor-observado-cuantitativo" data-prm='${rubricasJson}' ${!p.rubricas.length ? 'disabled' : ''}>`;
+            }
+            
             html += `<tr>
                 <td>
                     <input type="hidden" name="fk_id_prm[]" value="${p.id_prm}">${p.nombre_prm}
                     ${!p.rubricas.length ? '<span class="badge bg-danger ms-2">Sin rúbrica</span>' : ''}
+                    ${esCualitativo ? '<span class="badge bg-info ms-2">Cualitativo</span>' : ''}
                 </td>
                 <td>
-                    <input type="number" name="valor_observado[]" step="0.01" min="0" class="form-control valor-observado" data-prm='${rubricasJson}' ${!p.rubricas.length ? 'disabled' : ''}>
+                    ${valorObservadoHtml}
                 </td>
                 <td>
-                    <span>${p.unidad || ''}</span>
+                    <span>${p.unidad || (esCualitativo ? 'N/A' : '')}</span>
                     <input type="hidden" name="unidad[]" value="${p.unidad || ''}">
                 </td>
                 <td>
@@ -155,7 +179,8 @@ function cargarParametros(){
 }
 $('#fk_id_jug,#fk_id_tip').on('change', cargarParametros);
 
-$(document).on('input', '.valor-observado', function(){
+// Manejar cambios en valores observados cuantitativos
+$(document).on('input', '.valor-observado-cuantitativo', function(){
     let val = parseFloat($(this).val());
     let rubricas = $(this).data('prm');
     let nota = '';
@@ -169,6 +194,22 @@ $(document).on('input', '.valor-observado', function(){
     $(this).closest('tr').find('.nota-calculada').val(nota);
     calcularPromedio();
 });
+
+// Manejar cambios en valores observados cualitativos
+$(document).on('change', '.valor-observado-cualitativo', function(){
+    let selectedOption = $(this).find('option:selected');
+    let puntaje = selectedOption.data('puntaje');
+    
+    // Asignar el puntaje a la nota calculada
+    if (puntaje !== undefined) {
+        $(this).closest('tr').find('.nota-calculada').val(puntaje);
+    } else {
+        $(this).closest('tr').find('.nota-calculada').val('');
+    }
+    
+    calcularPromedio();
+});
+
 function calcularPromedio(){
     let sum = 0, count = 0;
     $('.nota-calculada').each(function(){
@@ -181,6 +222,7 @@ function calcularPromedio(){
     let prom = (count > 0) ? (sum / count).toFixed(2) : "0.00";
     $('#promedioPrueba').text(prom);
 }
+
 $(function(){ cargarParametros(); });
 </script>
 {% endblock %}

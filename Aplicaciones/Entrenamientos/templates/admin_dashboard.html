@@ -133,15 +133,7 @@
         <li class="pc-item pc-caption">
           <label>Navigation</label>
         </li>
-        <li class="pc-item">
-        <li class="pc-item">
-          <a href="{% url 'admin_dashboard' %}" class="pc-link">
-            <span class="pc-micon">
-              <i data-feather="home"></i>
-            </span>
-            <span class="pc-mtext">Dashboard</span>
-          </a>
-        </li>
+        
         {% if user.rol_usu == 'admin_dios' %}
         <li class="pc-item pc-caption">
             <label>Gestión General</label>
@@ -156,6 +148,14 @@
         {% endif %}
 
         {% if user.rol_usu == 'admin' %}
+        <li class="pc-item">
+          <a href="{% url 'dashboard_admin' %}" class="pc-link">
+            <span class="pc-micon">
+              <i data-feather="home"></i>
+            </span>
+            <span class="pc-mtext">Dashboard</span>
+          </a>
+        </li>
         <li class="pc-item pc-caption">
             <label>Gestión Deportiva</label>
             <i data-feather="activity"></i>
@@ -179,32 +179,29 @@
             </a>
         </li>
         <li class="pc-item pc-hasmenu">
+          <a href="{% url 'list_ciclo' %}" class="pc-link">
+              <span class="pc-micon"><i data-feather="calendar"></i></span>
+              <span class="pc-mtext">Ciclos</span>
+          </a>
+      </li>
+        <li class="pc-item pc-hasmenu">
             <a href="{% url 'list_equipo' %}" class="pc-link">
                 <span class="pc-micon"><i data-feather="users"></i></span>
                 <span class="pc-mtext">Equipo</span>
             </a>
         </li>
-        <li class="pc-item pc-hasmenu">
-            <a href="{% url 'list_jugadores' %}" class="pc-link">
-                <span class="pc-micon"><i data-feather="user"></i></span>
-                <span class="pc-mtext">Jugadores</span>
-            </a>
-        </li>
-        <li class="pc-item pc-hasmenu">
-            <a href="{% url 'list_tipoevaluaciones' %}" class="pc-link">
-                <span class="pc-micon"><i data-feather="list"></i></span>
-                <span class="pc-mtext">Tipos de Evaluaciones</span>
-            </a>
-        </li>
-        <li class="pc-item pc-hasmenu">
-            <a href="{% url 'list_pruebas' %}" class="pc-link">
-                <span class="pc-micon"><i data-feather="file-text"></i></span>
-                <span class="pc-mtext">Pruebas</span>
-            </a>
-        </li>
+        
         {% endif %}
 
         {% if user.rol_usu == 'entrenador' %}
+        <li class="pc-item">
+          <a href="{% url 'dashboard_entrenador' %}" class="pc-link">
+            <span class="pc-micon">
+              <i data-feather="home"></i>
+            </span>
+            <span class="pc-mtext">Dashboard</span>
+          </a>
+        </li>
         <li class="pc-item pc-caption">
             <label>Panel Entrenador</label>
             <i data-feather="user"></i>
@@ -215,6 +212,12 @@
                 <span class="pc-mtext">Jugadores</span>
             </a>
         </li>
+        <li class="pc-item pc-hasmenu">
+          <a href="{% url 'list_ciclo' %}" class="pc-link">
+              <span class="pc-micon"><i data-feather="calendar"></i></span>
+              <span class="pc-mtext">Ciclos</span>
+          </a>
+      </li>
         <li class="pc-item pc-hasmenu">
             <a href="{% url 'list_tipoevaluaciones' %}" class="pc-link">
                 <span class="pc-micon"><i data-feather="list"></i></span>
@@ -247,6 +250,17 @@
                 <span class="pc-mtext">Promedios Guardados Equipo</span>
             </a>
         </li>
+        {% endif %}
+        {% if user.rol_usu == 'jugador' %}
+        <li class="pc-item">
+          <a href="{% url 'dashboard_jugador' %}" class="pc-link">
+            <span class="pc-micon">
+              <i data-feather="home"></i>
+            </span>
+            <span class="pc-mtext">Dashboard</span>
+          </a>
+        </li>
+        
         {% endif %}
 
         
@@ -307,9 +321,7 @@
       <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown p-2 overflow-hidden">
         <div class="dropdown-header flex items-center justify-between py-4 px-5 bg-primary-500">
           <div class="flex mb-1 items-center">
-            <div class="shrink-0">
-              
-            </div>
+            
             <div class="grow ms-3">
               <h6 class="mb-1 text-white">{{ usuario.nombres_usu|default:"Usuario" }} </h6>
               <span class="text-white">{{ usuario.correo_usu }}</span>
@@ -326,14 +338,7 @@
                 <span>Settings</span>
               </span>
             </a>
-            <a href="#" class="dropdown-item">
-              <span>
-                <svg class="pc-icon text-muted me-2 inline-block">
-                  <use xlink:href="#custom-share-bold"></use>
-                </svg>
-                <span>Share</span>
-              </span>
-            </a>
+            
             <a href="#" class="dropdown-item">
               <span>
                 <svg class="pc-icon text-muted me-2 inline-block">

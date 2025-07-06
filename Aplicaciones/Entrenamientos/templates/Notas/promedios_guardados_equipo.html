@@ -6,9 +6,19 @@
         Promedios Guardados - {{ equipo_nombre }}
     </h3>
     <form method="get" class="row g-2 justify-content-center mb-4">
-        <div class="col-md-5">
-            <select name="temporada" class="form-select" onchange="this.form.submit()" required>
-                <option value="">Selecciona temporada</option>
+        <div class="col-md-4">
+            <select name="jugador" class="form-select" onchange="this.form.submit()">
+                <option value="todos" {% if jugador_id == 'todos' %}selected{% endif %}>Todos los jugadores</option>
+                {% for jug in jugadores %}
+                    <option value="{{ jug.id_jug }}" {% if jugador_id == jug.id_jug|stringformat:"s" %}selected{% endif %}>
+                        {{ jug.fk_id_usu.nombres_usu }} {{ jug.fk_id_usu.primer_apellido_usu }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="temporada" class="form-select" onchange="this.form.submit()">
+                <option value="">Todas las temporadas</option>
                 {% for t in temporadas %}
                     <option value="{{ t.id_temp }}" {% if temporada_actual == t.id_temp %}selected{% endif %}>
                         {{ t.nombre_temp }}
@@ -17,19 +27,23 @@
             </select>
         </div>
         <div class="col-md-3">
-            <select name="macro" class="form-select" onchange="this.form.submit()">
-                <option value="ambos" {% if macro_filtro == 'ambos' %}selected{% endif %}>Macro 1 y Macro 2</option>
-                <option value="MACRO 1" {% if macro_filtro == 'MACRO 1' %}selected{% endif %}>Macro 1</option>
-                <option value="MACRO 2" {% if macro_filtro == 'MACRO 2' %}selected{% endif %}>Macro 2</option>
+            <select name="ciclo" class="form-select" onchange="this.form.submit()">
+                <option value="ambos" {% if ciclo_id == 'ambos' %}selected{% endif %}>Todos los ciclos</option>
+                {% for ciclo in ciclos %}
+                    <option value="{{ ciclo.id_ciclo }}" {% if ciclo_id == ciclo.id_ciclo|stringformat:"s" %}selected{% endif %}>
+                        {{ ciclo.nombre_ciclo }}
+                    </option>
+                {% endfor %}
             </select>
         </div>
     </form>
+    
     <div class="table-responsive">
         <table class="table table-bordered table-striped text-center align-middle">
             <thead class="table-primary">
                 <tr>
                     <th>Jugador</th>
-                    <th>Macro</th>
+                    <th>Ciclo</th>
                     {% for tipo in tipos %}
                         <th>{{ tipo.nombre_tip|upper }}</th>
                     {% endfor %}
@@ -40,7 +54,7 @@
             {% for fila in datos %}
                 <tr>
                     <td>{{ fila.jugador.fk_id_usu.nombres_usu }} {{ fila.jugador.fk_id_usu.primer_apellido_usu }}</td>
-                    <td>{{ fila.macro }}</td>
+                    <td>{{ fila.ciclo.nombre_ciclo }}</td>
                     {% for tipo in fila.tipos %}
                         <td>
                             {% if tipo.nota == "0.00" %}
@@ -61,8 +75,8 @@
             {% endfor %}
             {% if not datos %}
                 <tr>
-                    <td colspan="{{ tipos|length|add:'3' }}" class="text-center text-danger py-4">
-                        <strong>Seleccione una temporada y/o macro para ver resultados.</strong>
+                    <td colspan="{{ tipos|length|add:'3' }}" class="text-center text-muted py-4">
+                        <strong>No hay datos de promedios para mostrar.</strong>
                     </td>
                 </tr>
             {% endif %}

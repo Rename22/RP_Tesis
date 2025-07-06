@@ -23,50 +23,83 @@
                     <label for="fk_id_cat" class="form-label">Categoría</label>
                     <input type="text" class="form-control" value="{{ rubrica.fk_id_cat.nombre_cat }}" disabled>
                 </div>
+                {% if not es_cualitativa %}
                 <div class="mb-3 col-md-4">
                     <label for="fk_id_unes" class="form-label">Unidad</label>
                     <input type="text" class="form-control" value="{{ rubrica.fk_id_unes.nombre_unes }}" disabled>
                 </div>
+                {% endif %}
             </div>
 
             <hr>
-            <h5 class="text-center">Escalas de la Rúbrica</h5>
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="tablaRubrica">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th>Valor Mínimo</th>
-                            <th>Hasta</th> <!-- Nueva columna con la palabra "Hasta" -->
-                            <th>Valor Máximo</th>
-                            <th>Puntaje</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbodyRubrica">
-                        {% for escala in escalas %}
+            
+            {% if es_cualitativa %}
+                <!-- RÚBRICA CUALITATIVA -->
+                <h5 class="text-center">Escalas de la Rúbrica Cualitativa</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="tablaRubricaCualitativa">
+                        <thead class="table-light text-center">
                             <tr>
-                                <td>
-                                    <div class="input-group">
-                                        <input type="number" step="0.01" min="0" class="form-control" value="{{ escala.valor_min_rub|stringformat:'.2f' }}" disabled>
-                                        <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
-                                    </div>
-                                </td>
-                                <td class="text-center">Hasta</td>
-                                <td>
-                                    <div class="input-group">
-                                        <input type="number" step="0.01" min="0" class="form-control" value="{{ escala.valor_max_rub|stringformat:'.2f' }}" disabled>
-                                        <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" max="10" class="form-control" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" disabled>
-                                </td>
+                                <th width="70%">Criterio de Evaluación</th>
+                                <th width="30%">Puntaje</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            {% for escala in escalas %}
+                                <tr>
+                                    <td>
+                                        <div class="p-2">
+                                            {{ escala.rubrica_cualitativa }}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary fs-6">{{ escala.puntaje_rub|stringformat:'.2f' }}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <!-- RÚBRICA CUANTITATIVA -->
+                <h5 class="text-center">Escalas de la Rúbrica</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="tablaRubrica">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>Valor Mínimo</th>
+                                <th>Hasta</th>
+                                <th>Valor Máximo</th>
+                                <th>Puntaje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyRubrica">
+                            {% for escala in escalas %}
+                                <tr>
+                                    <td>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" min="0" class="form-control" value="{{ escala.valor_min_rub|stringformat:'.2f' }}" disabled>
+                                            <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">Hasta</td>
+                                    <td>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" min="0" class="form-control" value="{{ escala.valor_max_rub|stringformat:'.2f' }}" disabled>
+                                            <span class="input-group-text unit-span">{{ rubrica.fk_id_unes.nombre_unes }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0" max="10" class="form-control" value="{{ escala.puntaje_rub|stringformat:'.2f' }}" disabled>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
 
-            <!-- Botón para eliminar -->
+            <!-- Botones de acción -->
             <div class="text-center mt-3">
                 <a href="{% url 'edit_rubrica' rubrica.id_rub %}" class="btn btn-warning">
                     <i class="bi bi-pencil-square"></i> Editar
@@ -109,4 +142,50 @@
             });
         }
     </script>
+
+    <style>
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group .form-control {
+            flex-grow: 1;
+        }
+
+        .input-group .input-group-text {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+        }
+
+        .form-control:disabled {
+            background-color: #e9ecef;
+            opacity: 0.65;
+        }
+
+        /* Estilos para rúbrica cualitativa */
+        #tablaRubricaCualitativa .p-2 {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+        }
+
+        .badge.fs-6 {
+            font-size: 1rem !important;
+            padding: 0.5rem 0.75rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .input-group-text {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
 {% endblock %}

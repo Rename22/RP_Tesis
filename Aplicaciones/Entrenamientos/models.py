@@ -147,6 +147,7 @@ class TipoEvaluacion(models.Model):
     estado_tip = models.BooleanField(default=True)  # Estado booleano para activar/desactivar la evaluación
     fecha_creacion_tip = models.DateTimeField(auto_now_add=True)  # Fecha de creación
     fecha_actualizacion_tip = models.DateTimeField(blank=True, null=True)  # Fecha de actualización
+    cualitativa_tip = models.BooleanField(default=False)
 
     
 class ParametroEvaluacion(models.Model):
@@ -170,9 +171,10 @@ class Rubrica(models.Model):
     id_rub = models.AutoField(primary_key=True)
     fk_id_prm = models.ForeignKey(ParametroEvaluacion, on_delete=models.CASCADE)
     fk_id_cat = models.ForeignKey(Categoria, on_delete=models.CASCADE)
-    fk_id_unes = models.ForeignKey(UnidadEscala, on_delete=models.CASCADE)
-    valor_min_rub = models.DecimalField(max_digits=6, decimal_places=2)     # Ej: 10.00
-    valor_max_rub = models.DecimalField(max_digits=6, decimal_places=2)     # Ej: 11.00
+    fk_id_unes = models.ForeignKey(UnidadEscala, on_delete=models.CASCADE, null=True, blank=True)
+    valor_min_rub = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)     # Ej: 10.00
+    valor_max_rub = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)     # Ej: 11.00
+    rubrica_cualitativa = models.TextField(null=True, blank=True)
     puntaje_rub = models.DecimalField(max_digits=4, decimal_places=2)       # Ej: 9.5
     estado_rub = models.BooleanField(default=True)
     fecha_creacion_rub = models.DateTimeField(auto_now_add=True)
@@ -199,7 +201,7 @@ class Prueba(models.Model):
     fk_id_jug = models.ForeignKey('Jugador', on_delete=models.CASCADE)
     fk_id_tip = models.ForeignKey('TipoEvaluacion', on_delete=models.CASCADE)
     fk_id_temp = models.ForeignKey('Temporada', on_delete=models.CASCADE)
-    macro_pru = models.CharField(max_length=10)
+    fk_id_ciclo = models.ForeignKey('CicloDeEntrenamiento', on_delete=models.CASCADE)
     promedio_pru = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Promedio de esta PRUEBA (en tiempo real)
     observaciones_pru = models.TextField(blank=True, null=True)
     estado_pru = models.BooleanField(default=True)
@@ -208,13 +210,13 @@ class Prueba(models.Model):
     fecha_actualizacion_pru = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = (('fk_id_jug', 'fk_id_tip', 'fk_id_temp', 'macro_pru'),)
+        unique_together = (('fk_id_jug', 'fk_id_tip', 'fk_id_temp', 'fk_id_ciclo'),)
 
 class DetallePrueba(models.Model):
     id_detpru = models.AutoField(primary_key=True)
     fk_id_pru = models.ForeignKey('Prueba', on_delete=models.CASCADE, related_name="detalles")
     fk_id_prm = models.ForeignKey('ParametroEvaluacion', on_delete=models.CASCADE)
-    valor_observado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)   # Valor que ingresa el entrenador (ej: segundos, metros)
+    valor_observado = models.TextField(blank=True, null=True)  # Valor que ingresa el entrenador (ej: segundos, metros)
     unidad = models.CharField(max_length=30, blank=True, null=True)                                # Unidad (ej: 'segundos', 'metros')
     nota_calculada = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)   # Nota según la rúbrica
     fecha_creacion_detpru = models.DateTimeField(auto_now_add=True)
@@ -225,9 +227,17 @@ class DetallePrueba(models.Model):
 class PromedioJugador(models.Model):
     id_proju = models.AutoField(primary_key=True)
     jugador_proju = models.ForeignKey(Jugador, on_delete=models.CASCADE)
-    macro_proju = models.CharField(max_length=20)
+    fk_id_ciclo = models.ForeignKey('CicloDeEntrenamiento', on_delete=models.CASCADE)
     tipo_proju = models.ForeignKey(TipoEvaluacion, on_delete=models.CASCADE)
     temporada_proju = models.ForeignKey(Temporada, on_delete=models.CASCADE)
     promedio_proju = models.DecimalField(max_digits=5, decimal_places=2)
     fecha_calculo_proju = models.DateTimeField(auto_now_add=True)
 
+    
+
+class CicloDeEntrenamiento(models.Model):
+    id_ciclo = models.AutoField(primary_key=True)
+    nombre_ciclo = models.CharField(max_length=100, blank=True, null=True)  # Nombre del ciclo (Ej. "Macrociclo", "Mesociclo 1", etc.)
+    estado_ciclo = models.BooleanField(default=True)  # Estado del ciclo (activo/inactivo)
+    fecha_creacion_ciclo = models.DateTimeField(auto_now_add=True)  # Fecha de creación
+    fecha_actualizacion_ciclo = models.DateTimeField(blank=True, null=True)  # Fecha de actualización

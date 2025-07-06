@@ -34,66 +34,352 @@
         </div>
     </div>
 
-    <div class="row">
-        <!-- Mostrar equipo -->
+    <!-- Información básica -->
+    <div class="row mb-4">
         <div class="col-md-4">
-            <h5>Equipo</h5>
-            <p>{{ equipo.nombre_equ }}</p>
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Equipo</h5>
+                    <p class="card-text h4">{{ equipo.nombre_equ }}</p>
+                </div>
+            </div>
         </div>
-
-        <!-- Mostrar jugadores activos -->
         <div class="col-md-4">
-            <h5>Jugadores Activos</h5>
-            <p>{{ jugadores_activos }}</p>
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Jugadores Activos</h5>
+                    <p class="card-text h4">{{ jugadores_activos }}</p>
+                </div>
+            </div>
         </div>
-
-        <!-- Mostrar pruebas realizadas -->
         <div class="col-md-4">
-            <h5>Pruebas Realizadas</h5>
-            <p>{{ pruebas_realizadas }}</p>
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Pruebas Realizadas</h5>
+                    <p class="card-text h4">{{ pruebas_realizadas }}</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <hr>
-
-    <div class="row">
-        <!-- Mostrar promedio general -->
-        <div class="col-md-4">
-            <h5>Promedio General</h5>
-            <p>{{ promedio_general|floatformat:2 }}</p>
+    <!-- KPIs con gráficas -->
+    <div class="row mb-4">
+        <!-- Rendimiento por jugador -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Rendimiento por Jugador (Top 5)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="rendimientoJugadoresChart" width="400" height="200"></canvas>
+                </div>
+            </div>
         </div>
 
-        <!-- Últimas pruebas -->
-        <div class="col-md-8">
-            <h5>Últimas 5 Pruebas Realizadas</h5>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Jugador</th>
-                        <th>Tipo Evaluación</th>
-                        <th>Macro</th>
-                        <th>Fecha</th>
-                        <th>Promedio</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prueba in ultimas_pruebas %}
-                    <tr>
-                        <td>{{ prueba.fk_id_jug.fk_id_usu.nombres_usu }} {{ prueba.fk_id_jug.fk_id_usu.primer_apellido_usu }}</td>
-                        <td>{{ prueba.fk_id_tip.nombre_tip }}</td>
-                        <td>{{ prueba.macro_pru }}</td>
-                        <td>{{ prueba.fecha_pru|date:"d/m/Y" }}</td>
-                        <td>{{ prueba.promedio_pru|floatformat:2 }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5">No hay pruebas recientes.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Rendimiento por mesociclo -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Rendimiento por Mesociclo</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="rendimientoMesocicloChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Rendimiento por temporada -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Rendimiento por Temporada</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="rendimientoTemporadaChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Valoración general -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Valoración General</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="valoracionGeneralChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard de estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Dashboard de Estadísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h6>Promedio General</h6>
+                                    <h3>{{ promedio_general|floatformat:2 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <h6>Pruebas este Mes</h6>
+                                    <h3>{{ pruebas_mes }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body text-center">
+                                    <h6>Mejor Jugador</h6>
+                                    <h3>{{ mejor_jugador }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h6>Temporada Actual</h6>
+                                    <h3>{{ temporada_actual }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos ingresos -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Últimos Ingresos de Pruebas</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ultimosIngresosChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de últimas pruebas -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Últimas 5 Pruebas Realizadas</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Jugador</th>
+                                <th>Tipo Evaluación</th>
+                                <th>Macro</th>
+                                <th>Fecha</th>
+                                <th>Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prueba in ultimas_pruebas %}
+                            <tr>
+                                <td>{{ prueba.fk_id_jug.fk_id_usu.nombres_usu }} {{ prueba.fk_id_jug.fk_id_usu.primer_apellido_usu }}</td>
+                                <td>{{ prueba.fk_id_tip.nombre_tip }}</td>
+                                <td>{{ prueba.fk_id_ciclo.nombre_ciclo }}</td>
+                                <td>{{ prueba.fecha_pru|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class=" badge-success">{{ prueba.promedio_pru|floatformat:2 }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No hay pruebas recientes.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Scripts de Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<script>
+// Datos desde Django (estas variables vendrán de tu vista)
+const rendimientoJugadoresData = {{ rendimiento_jugadores|safe }};
+const rendimientoMesocicloData = {{ rendimiento_mesociclo|safe }};
+const rendimientoTemporadaData = {{ rendimiento_temporada|safe }};
+const valoracionGeneralData = {{ valoracion_general|safe }};
+const ultimosIngresosData = {{ ultimos_ingresos|safe }};
+
+// Configuración de colores
+const colors = {
+    primary: 'rgba(54, 162, 235, 0.8)',
+    success: 'rgba(75, 192, 192, 0.8)',
+    warning: 'rgba(255, 206, 86, 0.8)',
+    danger: 'rgba(255, 99, 132, 0.8)',
+    info: 'rgba(153, 102, 255, 0.8)',
+    secondary: 'rgba(201, 203, 207, 0.8)'
+};
+
+// Gráfica de rendimiento por jugador
+const ctxJugadores = document.getElementById('rendimientoJugadoresChart').getContext('2d');
+new Chart(ctxJugadores, {
+    type: 'bar',
+    data: {
+        labels: rendimientoJugadoresData.labels,
+        datasets: [{
+            label: 'Promedio de Rendimiento',
+            data: rendimientoJugadoresData.data,
+            backgroundColor: colors.primary,
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 10
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Gráfica de rendimiento por mesociclo
+const ctxMesociclo = document.getElementById('rendimientoMesocicloChart').getContext('2d');
+new Chart(ctxMesociclo, {
+    type: 'line',
+    data: {
+        labels: rendimientoMesocicloData.labels,
+        datasets: [{
+            label: 'Promedio por Mesociclo',
+            data: rendimientoMesocicloData.data,
+            backgroundColor: colors.success,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 10
+            }
+        }
+    }
+});
+
+// Gráfica de rendimiento por temporada
+const ctxTemporada = document.getElementById('rendimientoTemporadaChart').getContext('2d');
+new Chart(ctxTemporada, {
+    type: 'doughnut',
+    data: {
+        labels: rendimientoTemporadaData.labels,
+        datasets: [{
+            data: rendimientoTemporadaData.data,
+            backgroundColor: [
+                colors.primary,
+                colors.success,
+                colors.warning,
+                colors.danger,
+                colors.info
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Gráfica de valoración general
+const ctxValoracion = document.getElementById('valoracionGeneralChart').getContext('2d');
+new Chart(ctxValoracion, {
+    type: 'radar',
+    data: {
+        labels: valoracionGeneralData.labels,
+        datasets: [{
+            label: 'Valoración General',
+            data: valoracionGeneralData.data,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            r: {
+                beginAtZero: true,
+                max: 10
+            }
+        }
+    }
+});
+
+// Gráfica de últimos ingresos
+const ctxIngresos = document.getElementById('ultimosIngresosChart').getContext('2d');
+new Chart(ctxIngresos, {
+    type: 'bar',
+    data: {
+        labels: ultimosIngresosData.labels,
+        datasets: [{
+            label: 'Pruebas Realizadas',
+            data: ultimosIngresosData.data,
+            backgroundColor: colors.warning,
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
 
 {% endblock %}

@@ -1372,12 +1372,16 @@ def add_tipoevaluacion(request):
         if not descripcion_tip:
             descripcion_tip = "SIN DESCRIPCIÓN"
 
+        # Verificar si el tipo de evaluación es cualitativo o cuantitativo
+        cualitativa_tip = 'cualitativa_tip' in request.POST  # Verifica si el checkbox está marcado
+
         # Crear el tipo de evaluación y guardarlo en la base de datos
         tipo_evaluacion = TipoEvaluacion(
             nombre_tip=nombre_tip,
             descripcion_tip=descripcion_tip,
             fecha_creacion_tip=fecha_creacion_tip,
-            estado_tip=True  # Establecemos el estado del tipo de evaluación como 'Activo' por defecto
+            estado_tip=True,  # Establecemos el estado como 'Activo' por defecto
+            cualitativa_tip=cualitativa_tip  # Establecemos si es cualitativa o cuantitativa
         )
         tipo_evaluacion.save()
 
@@ -1410,8 +1414,6 @@ def add_tipoevaluacion(request):
     })
 
 
-
-
 @login_required
 def edit_tipoevaluacion(request, pk):
     if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
@@ -1422,9 +1424,11 @@ def edit_tipoevaluacion(request, pk):
 
     if request.method == 'POST':
         try:
+            # Actualizamos los campos del tipo de evaluación
             tipo_evaluacion.nombre_tip = request.POST['nombre_tip']
             tipo_evaluacion.descripcion_tip = request.POST.get('descripcion_tip', '').strip() or "SIN DESCRIPCIÓN"
-            tipo_evaluacion.estado_tip = 'estado_tip' in request.POST  # Activar o desactivar tipo de evaluación
+            tipo_evaluacion.estado_tip = 'estado_tip' in request.POST
+            tipo_evaluacion.cualitativa_tip = 'cualitativa_tip' in request.POST
             tipo_evaluacion.fecha_actualizacion_tip = timezone.now()
             tipo_evaluacion.save()
 
@@ -1432,26 +1436,50 @@ def edit_tipoevaluacion(request, pk):
             if not tipo_evaluacion.estado_tip:
                 ParametroEvaluacion.objects.filter(fk_tipo_evaluacion=tipo_evaluacion).update(estado_prm=False)
 
+            # Recibimos los datos de los parámetros
             titulos = request.POST.getlist('titulo_det[]')
             descripciones = request.POST.getlist('descripcion_det[]')
+            estados = request.POST.getlist('estado_det[]')  # AGREGAMOS ESTA LÍNEA
             ids_parametros = request.POST.getlist('detalle_id[]')
 
+            # Validamos que todas las listas tengan la misma longitud
+            max_length = max(len(titulos), len(descripciones), len(estados))
+            
+            # Rellenamos las listas para que tengan la misma longitud
+            while len(titulos) < max_length:
+                titulos.append('')
+            while len(descripciones) < max_length:
+                descripciones.append('')
+            while len(estados) < max_length:
+                estados.append('1')  # Por defecto activo
+            while len(ids_parametros) < max_length:
+                ids_parametros.append('')
+
+            # Obtenemos los parámetros existentes para comparar
             parametros_existentes = ParametroEvaluacion.objects.filter(fk_tipo_evaluacion=tipo_evaluacion)
             ids_existentes = [str(p.id_prm) for p in parametros_existentes]
 
-            ids_eliminar = set(ids_existentes) - set(ids_parametros)
+            # Filtramos los IDs que no están vacíos
+            ids_parametros_validos = [id_param for id_param in ids_parametros if id_param and id_param != '']
+            
+            # Identificamos los parámetros que deben ser eliminados
+            ids_eliminar = set(ids_existentes) - set(ids_parametros_validos)
             if ids_eliminar:
                 ParametroEvaluacion.objects.filter(id_prm__in=ids_eliminar).delete()
 
+            # Iteramos sobre los parámetros para actualizarlos o crearlos
             for i in range(len(titulos)):
                 titulo = titulos[i].strip()
                 descripcion = descripciones[i].strip() or "SIN DESCRIPCIÓN"
-                param_id = ids_parametros[i]
+                estado = estados[i] == '1'  # Convertimos a boolean
+                param_id = ids_parametros[i] if i < len(ids_parametros) else ''
 
+                # Saltamos si el título está vacío
                 if not titulo:
                     continue
 
                 if param_id and param_id != '':
+                    # Si el parámetro ya existe, lo actualizamos
                     parametro = ParametroEvaluacion.objects.filter(
                         id_prm=param_id,
                         fk_tipo_evaluacion=tipo_evaluacion
@@ -1459,23 +1487,37 @@ def edit_tipoevaluacion(request, pk):
                     if parametro:
                         parametro.nombre_prm = titulo
                         parametro.descripcion_prm = descripcion
+                        parametro.estado_prm = estado
                         parametro.fecha_actualizacion_prm = timezone.now()
                         parametro.save()
                 else:
+                    # Si el parámetro no existe, lo creamos
                     ParametroEvaluacion.objects.create(
                         fk_tipo_evaluacion=tipo_evaluacion,
                         nombre_prm=titulo,
                         descripcion_prm=descripcion,
+                        estado_prm=estado,
                         fecha_creacion_prm=timezone.now()
                     )
 
+            # Mensaje de éxito y redirección
             messages.success(request, "Tipo de Evaluación actualizado correctamente.")
             return redirect('list_tipoevaluaciones')
 
         except Exception as e:
+            # Si ocurre un error, mostramos el mensaje
             messages.error(request, f"Error al actualizar: {str(e)}")
+            # Agregamos información de debug
+            print(f"Error details: {str(e)}")
+            print(f"Titulos: {request.POST.getlist('titulo_det[]')}")
+            print(f"Descripciones: {request.POST.getlist('descripcion_det[]')}")
+            print(f"Estados: {request.POST.getlist('estado_det[]')}")
+            print(f"IDs: {request.POST.getlist('detalle_id[]')}")
 
+    # Obtenemos los parámetros asociados a este tipo de evaluación
     parametros = tipo_evaluacion.parametroevaluacion_set.all()
+
+    # Renderizamos la plantilla con los datos
     return render(request, 'TipoEvaluacion/editTipoEvaluaciones.html', {
         'tipo': tipo_evaluacion,
         'parametros': parametros,
@@ -1614,28 +1656,46 @@ def list_rubricas(request):
 @login_required
 def view_rubrica(request, pk):
     rubrica = get_object_or_404(Rubrica, pk=pk)
-    # Obtenemos las escalas de esa rúbrica
-    escalas = Rubrica.objects.filter(
-        fk_id_prm=rubrica.fk_id_prm,
-        fk_id_cat=rubrica.fk_id_cat,
-        fk_id_unes=rubrica.fk_id_unes,
-        estado_rub=True
-    ).order_by('-puntaje_rub')
-
+    
+    # Determinamos si es cualitativa o cuantitativa según el parámetro
+    parametro = rubrica.fk_id_prm
+    tipo_evaluacion = parametro.fk_tipo_evaluacion
+    es_cualitativa = tipo_evaluacion.cualitativa_tip
+    
+    # Obtenemos todas las escalas de esa rúbrica
+    if es_cualitativa:
+        # Para rúbricas cualitativas: filtrar por parámetro y categoría solamente
+        escalas = Rubrica.objects.filter(
+            fk_id_prm=rubrica.fk_id_prm,
+            fk_id_cat=rubrica.fk_id_cat,
+            estado_rub=True,
+            rubrica_cualitativa__isnull=False  # Solo las que tienen contenido cualitativo
+        ).order_by('-puntaje_rub')
+    else:
+        # Para rúbricas cuantitativas: filtrar por parámetro, categoría y unidad
+        escalas = Rubrica.objects.filter(
+            fk_id_prm=rubrica.fk_id_prm,
+            fk_id_cat=rubrica.fk_id_cat,
+            fk_id_unes=rubrica.fk_id_unes,
+            estado_rub=True,
+            valor_min_rub__isnull=False,  # Solo las que tienen valores cuantitativos
+            valor_max_rub__isnull=False
+        ).order_by('-puntaje_rub')
+    
     parametros = ParametroEvaluacion.objects.filter(estado_prm=True)
     categorias = Categoria.objects.filter(estado_cat='activo')
     unidades = UnidadEscala.objects.filter(estado_unes=True)
-
+    
     return render(request, 'Rubrica/viewRubrica.html', {
         'rubrica': rubrica,
         'parametros': parametros,
         'categorias': categorias,
         'unidades': unidades,
         'escalas': escalas,
+        'es_cualitativa': es_cualitativa,  # Pasamos esta información al template
         'rol_usuario': request.user.rol_usu,
         'usuario': request.user
     })
-
 
 @login_required
 def add_rubrica(request):
@@ -1647,67 +1707,137 @@ def add_rubrica(request):
     tipos = TipoEvaluacion.objects.filter(estado_tip=True)
     categorias = Categoria.objects.filter(estado_cat='activo')
     unidades = UnidadEscala.objects.filter(estado_unes=True)
-    parametros = ParametroEvaluacion.objects.all()  # Obtener parámetros si es necesario
+    parametros = ParametroEvaluacion.objects.all()
 
     # Si el método es POST
     if request.method == 'POST':
         try:
-            # Obtener los valores del formulario
+            # Obtener los valores básicos del formulario
             fk_id_prm = request.POST['fk_id_prm']
             fk_id_cat = request.POST['fk_id_cat']
-            fk_id_unes = request.POST['fk_id_unes']
-
-            # Obtener los valores de las escalas
-            valores_min = request.POST.getlist('valor_min_rub[]')
-            valores_max = request.POST.getlist('valor_max_rub[]')
-            puntajes = request.POST.getlist('puntaje_rub[]')
-
-            # Depuración para verificar los valores que llegan
-            print("Valores Mínimos:", valores_min)
-            print("Valores Máximos:", valores_max)
-            print("Puntajes:", puntajes)
-
-            # Verificar que las listas no estén vacías y tengan la misma longitud
-            if not valores_min or not valores_max or not puntajes:
-                messages.error(request, "Por favor ingresa todos los valores para las escalas.")
-                return redirect('add_rubrica')
-
-            # Validar que las listas tengan la misma longitud
-            if len(valores_min) != len(valores_max) or len(valores_min) != len(puntajes):
-                messages.error(request, "Las listas de valores no coinciden en tamaño.")
-                return redirect('add_rubrica')
-
-            # Validar que no haya valores vacíos
-            for vmin, vmax, puntaje in zip(valores_min, valores_max, puntajes):
-                if not vmin or not vmax or not puntaje:
-                    messages.error(request, "Todos los campos de las escalas deben ser completados.")
-                    return redirect('add_rubrica')
-
-            # Guardar las escalas en la base de datos
+            tipo_rubrica = request.POST.get('tipo_rubrica', 'cuantitativa')
+            
+            # Obtener el parámetro para verificar el tipo
+            parametro = ParametroEvaluacion.objects.get(pk=fk_id_prm)
+            tipo_evaluacion = parametro.fk_tipo_evaluacion
+            
+            # Depuración
+            print(f"Tipo de rúbrica: {tipo_rubrica}")
+            print(f"Tipo evaluación cualitativa: {tipo_evaluacion.cualitativa_tip}")
+            
+            # Determinar si es cualitativa o cuantitativa basado en el tipo de evaluación
+            es_cualitativa = tipo_evaluacion.cualitativa_tip
+            
+            # Variables para guardar
             estado_rub = True
             fecha_creacion_rub = timezone.now()
             fecha_actualizacion_rub = None
-
-            for i in range(len(valores_min)):
-                Rubrica.objects.create(
-                    fk_id_prm=ParametroEvaluacion.objects.get(pk=fk_id_prm),
-                    fk_id_cat=Categoria.objects.get(pk=fk_id_cat),
-                    fk_id_unes=UnidadEscala.objects.get(pk=fk_id_unes),
-                    valor_min_rub=valores_min[i],
-                    valor_max_rub=valores_max[i],
-                    puntaje_rub=puntajes[i],
-                    estado_rub=estado_rub,
-                    fecha_creacion_rub=fecha_creacion_rub,
-                    fecha_actualizacion_rub=fecha_actualizacion_rub
-                )
-
+            
+            if es_cualitativa:
+                # RÚBRICA CUALITATIVA
+                print("Procesando rúbrica cualitativa...")
+                
+                # Obtener los valores cualitativos
+                rubricas_cualitativas = request.POST.getlist('rubrica_cualitativa[]')
+                puntajes_cualitativos = request.POST.getlist('puntaje_cualitativo[]')
+                
+                # Filtrar valores vacíos
+                rubricas_cualitativas = [r.strip() for r in rubricas_cualitativas if r.strip()]
+                puntajes_cualitativos = [p for p in puntajes_cualitativos if p]
+                
+                print("Rúbricas cualitativas:", rubricas_cualitativas)
+                print("Puntajes cualitativos:", puntajes_cualitativos)
+                
+                # Verificar que tenemos datos
+                if not rubricas_cualitativas or not puntajes_cualitativos:
+                    messages.error(request, "Por favor ingresa todos los criterios de evaluación.")
+                    return redirect('add_rubrica')
+                
+                # Verificar que las listas tengan la misma longitud
+                if len(rubricas_cualitativas) != len(puntajes_cualitativos):
+                    messages.error(request, "Las listas de criterios y puntajes no coinciden en tamaño.")
+                    return redirect('add_rubrica')
+                
+                # Guardar cada escala cualitativa
+                for i in range(len(rubricas_cualitativas)):
+                    Rubrica.objects.create(
+                        fk_id_prm=parametro,
+                        fk_id_cat=Categoria.objects.get(pk=fk_id_cat),
+                        fk_id_unes=None,  # NULL para rúbricas cualitativas
+                        valor_min_rub=None,  # NULL para rúbricas cualitativas
+                        valor_max_rub=None,  # NULL para rúbricas cualitativas
+                        rubrica_cualitativa=rubricas_cualitativas[i],
+                        puntaje_rub=puntajes_cualitativos[i],
+                        estado_rub=estado_rub,
+                        fecha_creacion_rub=fecha_creacion_rub,
+                        fecha_actualizacion_rub=fecha_actualizacion_rub
+                    )
+                
+            else:
+                # RÚBRICA CUANTITATIVA
+                print("Procesando rúbrica cuantitativa...")
+                
+                # Obtener la unidad (requerida para rúbricas cuantitativas)
+                fk_id_unes = request.POST.get('fk_id_unes')
+                if not fk_id_unes:
+                    messages.error(request, "Debe seleccionar una unidad de escala para rúbricas cuantitativas.")
+                    return redirect('add_rubrica')
+                
+                # Obtener los valores cuantitativos
+                valores_min = request.POST.getlist('valor_min_rub[]')
+                valores_max = request.POST.getlist('valor_max_rub[]')
+                puntajes = request.POST.getlist('puntaje_rub[]')
+                
+                # Filtrar valores vacíos
+                valores_min = [v for v in valores_min if v.strip()]
+                valores_max = [v for v in valores_max if v.strip()]
+                puntajes = [p for p in puntajes if p.strip()]
+                
+                print("Valores Mínimos:", valores_min)
+                print("Valores Máximos:", valores_max)
+                print("Puntajes:", puntajes)
+                
+                # Verificar que tenemos datos
+                if not valores_min or not valores_max or not puntajes:
+                    messages.error(request, "Por favor ingresa todos los valores para las escalas.")
+                    return redirect('add_rubrica')
+                
+                # Verificar que las listas tengan la misma longitud
+                if len(valores_min) != len(valores_max) or len(valores_min) != len(puntajes):
+                    messages.error(request, "Las listas de valores no coinciden en tamaño.")
+                    return redirect('add_rubrica')
+                
+                # Guardar cada escala cuantitativa
+                for i in range(len(valores_min)):
+                    Rubrica.objects.create(
+                        fk_id_prm=parametro,
+                        fk_id_cat=Categoria.objects.get(pk=fk_id_cat),
+                        fk_id_unes=UnidadEscala.objects.get(pk=fk_id_unes),
+                        valor_min_rub=valores_min[i],
+                        valor_max_rub=valores_max[i],
+                        rubrica_cualitativa=None,  # NULL para rúbricas cuantitativas
+                        puntaje_rub=puntajes[i],
+                        estado_rub=estado_rub,
+                        fecha_creacion_rub=fecha_creacion_rub,
+                        fecha_actualizacion_rub=fecha_actualizacion_rub
+                    )
+            
             # Mensaje de éxito
             messages.success(request, "Rúbrica creada correctamente.")
             return redirect('list_rubricas')
 
+        except KeyError as e:
+            # Error por campos faltantes
+            messages.error(request, f"Campo requerido faltante: {str(e)}")
+            return redirect('add_rubrica')
+        except ValueError as e:
+            # Error de valor inválido
+            messages.error(request, f"Valor inválido: {str(e)}")
+            return redirect('add_rubrica')
         except Exception as e:
-            # Si hay un error en cualquier parte, enviar mensaje de error
+            # Error general
             messages.error(request, f"Hubo un error: {str(e)}")
+            print(f"Error completo: {e}")
             return redirect('add_rubrica')
 
     # Renderizar la vista
@@ -1715,20 +1845,20 @@ def add_rubrica(request):
         'tipos': tipos,
         'categorias': categorias,
         'unidades': unidades,
-        'parametros': parametros,  # Pasamos los parámetros al formulario
+        'parametros': parametros,
         'rol_usuario': request.user.rol_usu,
         'usuario': request.user
     })
-
-
-
 
 
 @login_required
 def ajax_parametros_por_tipo(request):
     tipo_id = request.GET.get('tipo_id')
     parametros = []
+    cualitativa = False
     if tipo_id:
+        tipo = TipoEvaluacion.objects.get(pk=tipo_id)
+        cualitativa = tipo.cualitativa_tip  # Obtenemos el valor del campo cualitativa_tip
         parametros_qs = ParametroEvaluacion.objects.filter(
             fk_tipo_evaluacion_id=tipo_id,
             estado_prm=True
@@ -1737,72 +1867,198 @@ def ajax_parametros_por_tipo(request):
             {'id_prm': p.id_prm, 'nombre_prm': p.nombre_prm}
             for p in parametros_qs
         ]
-    return JsonResponse({'parametros': parametros})
+    return JsonResponse({
+        'parametros': parametros,
+        'cualitativa': cualitativa  # Retornamos este valor
+    })
+
+
 
 @login_required
 def edit_rubrica(request, pk):
-    rubrica = get_object_or_404(Rubrica, pk=pk)
-    # Aquí traemos TODAS las escalas de la "misma rúbrica" (grupo)
-    escalas = Rubrica.objects.filter(
-        fk_id_prm=rubrica.fk_id_prm,
-        fk_id_cat=rubrica.fk_id_cat,
-        fk_id_unes=rubrica.fk_id_unes,
-        estado_rub=True
-    ).order_by('-puntaje_rub')
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para editar rúbricas.")
+        return redirect('admin_dashboard')
 
+    rubrica = get_object_or_404(Rubrica, pk=pk)
+    
+    # Determinamos si es cualitativa o cuantitativa según el parámetro
+    parametro = rubrica.fk_id_prm
+    tipo_evaluacion = parametro.fk_tipo_evaluacion
+    es_cualitativa = tipo_evaluacion.cualitativa_tip
+    
+    # Obtenemos todas las escalas de esa rúbrica
+    if es_cualitativa:
+        # Para rúbricas cualitativas: filtrar por parámetro y categoría solamente
+        escalas = Rubrica.objects.filter(
+            fk_id_prm=rubrica.fk_id_prm,
+            fk_id_cat=rubrica.fk_id_cat,
+            estado_rub=True,
+            rubrica_cualitativa__isnull=False  # Solo las que tienen contenido cualitativo
+        ).order_by('-puntaje_rub')
+    else:
+        # Para rúbricas cuantitativas: filtrar por parámetro, categoría y unidad
+        escalas = Rubrica.objects.filter(
+            fk_id_prm=rubrica.fk_id_prm,
+            fk_id_cat=rubrica.fk_id_cat,
+            fk_id_unes=rubrica.fk_id_unes,
+            estado_rub=True,
+            valor_min_rub__isnull=False,  # Solo las que tienen valores cuantitativos
+            valor_max_rub__isnull=False
+        ).order_by('-puntaje_rub')
+    
+    # Consultas para cargar los datos en el formulario
+    tipos = TipoEvaluacion.objects.filter(estado_tip=True)
     parametros = ParametroEvaluacion.objects.filter(estado_prm=True)
     categorias = Categoria.objects.filter(estado_cat='activo')
     unidades = UnidadEscala.objects.filter(estado_unes=True)
 
     if request.method == 'POST':
-        fk_id_prm = request.POST['fk_id_prm']
-        fk_id_cat = request.POST['fk_id_cat']
-        fk_id_unes = request.POST['fk_id_unes']
+        try:
+            # Obtener los valores básicos del formulario
+            fk_id_prm = request.POST['fk_id_prm']
+            fk_id_cat = request.POST['fk_id_cat']
+            tipo_rubrica = request.POST.get('tipo_rubrica', 'cuantitativa')
+            
+            # Obtener el parámetro para verificar el tipo
+            parametro_nuevo = ParametroEvaluacion.objects.get(pk=fk_id_prm)
+            tipo_evaluacion_nuevo = parametro_nuevo.fk_tipo_evaluacion
+            
+            # Determinar si es cualitativa o cuantitativa basado en el tipo de evaluación
+            es_cualitativa_nuevo = tipo_evaluacion_nuevo.cualitativa_tip
+            
+            # Variables para guardar
+            estado_rub = True
+            fecha_actualizacion_rub = timezone.now()
+            
+            # Eliminar todas las escalas anteriores de ese grupo
+            if es_cualitativa:
+                # Eliminar rúbricas cualitativas anteriores
+                Rubrica.objects.filter(
+                    fk_id_prm=rubrica.fk_id_prm,
+                    fk_id_cat=rubrica.fk_id_cat,
+                    estado_rub=True,
+                    rubrica_cualitativa__isnull=False
+                ).delete()
+            else:
+                # Eliminar rúbricas cuantitativas anteriores
+                Rubrica.objects.filter(
+                    fk_id_prm=rubrica.fk_id_prm,
+                    fk_id_cat=rubrica.fk_id_cat,
+                    fk_id_unes=rubrica.fk_id_unes,
+                    estado_rub=True,
+                    valor_min_rub__isnull=False,
+                    valor_max_rub__isnull=False
+                ).delete()
+            
+            if es_cualitativa_nuevo:
+                # RÚBRICA CUALITATIVA
+                print("Procesando rúbrica cualitativa en edición...")
+                
+                # Obtener los valores cualitativos
+                rubricas_cualitativas = request.POST.getlist('rubrica_cualitativa[]')
+                puntajes_cualitativos = request.POST.getlist('puntaje_cualitativo[]')
+                
+                # Filtrar valores vacíos
+                rubricas_cualitativas = [r.strip() for r in rubricas_cualitativas if r.strip()]
+                puntajes_cualitativos = [p for p in puntajes_cualitativos if p]
+                
+                # Verificar que tenemos datos
+                if not rubricas_cualitativas or not puntajes_cualitativos:
+                    messages.error(request, "Por favor ingresa todos los criterios de evaluación.")
+                    return redirect('edit_rubrica', pk=pk)
+                
+                # Verificar que las listas tengan la misma longitud
+                if len(rubricas_cualitativas) != len(puntajes_cualitativos):
+                    messages.error(request, "Las listas de criterios y puntajes no coinciden en tamaño.")
+                    return redirect('edit_rubrica', pk=pk)
+                
+                # Guardar cada escala cualitativa
+                for i in range(len(rubricas_cualitativas)):
+                    Rubrica.objects.create(
+                        fk_id_prm=parametro_nuevo,
+                        fk_id_cat=Categoria.objects.get(pk=fk_id_cat),
+                        fk_id_unes=None,  # NULL para rúbricas cualitativas
+                        valor_min_rub=None,  # NULL para rúbricas cualitativas
+                        valor_max_rub=None,  # NULL para rúbricas cualitativas
+                        rubrica_cualitativa=rubricas_cualitativas[i],
+                        puntaje_rub=puntajes_cualitativos[i],
+                        estado_rub=estado_rub,
+                        fecha_creacion_rub=timezone.now(),  # Nueva fecha de creación
+                        fecha_actualizacion_rub=fecha_actualizacion_rub
+                    )
+                
+            else:
+                # RÚBRICA CUANTITATIVA
+                print("Procesando rúbrica cuantitativa en edición...")
+                
+                # Obtener la unidad (requerida para rúbricas cuantitativas)
+                fk_id_unes = request.POST.get('fk_id_unes')
+                if not fk_id_unes:
+                    messages.error(request, "Debe seleccionar una unidad de escala para rúbricas cuantitativas.")
+                    return redirect('edit_rubrica', pk=pk)
+                
+                # Obtener los valores cuantitativos
+                valores_min = request.POST.getlist('valor_min_rub[]')
+                valores_max = request.POST.getlist('valor_max_rub[]')
+                puntajes = request.POST.getlist('puntaje_rub[]')
+                
+                # Filtrar valores vacíos
+                valores_min = [v for v in valores_min if v.strip()]
+                valores_max = [v for v in valores_max if v.strip()]
+                puntajes = [p for p in puntajes if p.strip()]
+                
+                # Verificar que tenemos datos
+                if not valores_min or not valores_max or not puntajes:
+                    messages.error(request, "Por favor ingresa todos los valores para las escalas.")
+                    return redirect('edit_rubrica', pk=pk)
+                
+                # Verificar que las listas tengan la misma longitud
+                if len(valores_min) != len(valores_max) or len(valores_min) != len(puntajes):
+                    messages.error(request, "Las listas de valores no coinciden en tamaño.")
+                    return redirect('edit_rubrica', pk=pk)
+                
+                # Guardar cada escala cuantitativa
+                for i in range(len(valores_min)):
+                    Rubrica.objects.create(
+                        fk_id_prm=parametro_nuevo,
+                        fk_id_cat=Categoria.objects.get(pk=fk_id_cat),
+                        fk_id_unes=UnidadEscala.objects.get(pk=fk_id_unes),
+                        valor_min_rub=valores_min[i],
+                        valor_max_rub=valores_max[i],
+                        rubrica_cualitativa=None,  # NULL para rúbricas cuantitativas
+                        puntaje_rub=puntajes[i],
+                        estado_rub=estado_rub,
+                        fecha_creacion_rub=timezone.now(),  # Nueva fecha de creación
+                        fecha_actualizacion_rub=fecha_actualizacion_rub
+                    )
+            
+            # Mensaje de éxito
+            messages.success(request, "Rúbrica actualizada correctamente.")
+            return redirect('list_rubricas')
 
-        valores_min = request.POST.getlist('valor_min_rub[]')
-        valores_max = request.POST.getlist('valor_max_rub[]')
-        puntajes = request.POST.getlist('puntaje_rub[]')
-
-        # Elimina todas las escalas anteriores de ese grupo
-        Rubrica.objects.filter(
-            fk_id_prm=rubrica.fk_id_prm,
-            fk_id_cat=rubrica.fk_id_cat,
-            fk_id_unes=rubrica.fk_id_unes,
-            estado_rub=True
-        ).delete()
-
-        # Verificar que las listas tengan la misma longitud y no estén vacías
-        if not valores_min or not valores_max or not puntajes:
-            messages.error(request, "Por favor ingresa todos los valores para las escalas.")
+        except KeyError as e:
+            # Error por campos faltantes
+            messages.error(request, f"Campo requerido faltante: {str(e)}")
             return redirect('edit_rubrica', pk=pk)
-
-        if len(valores_min) != len(valores_max) or len(valores_min) != len(puntajes):
-            messages.error(request, "Las listas de valores no coinciden en tamaño.")
+        except ValueError as e:
+            # Error de valor inválido
+            messages.error(request, f"Valor inválido: {str(e)}")
             return redirect('edit_rubrica', pk=pk)
-
-        # Guardar las escalas en la base de datos
-        for i in range(len(valores_min)):
-            Rubrica.objects.create(
-                fk_id_prm=ParametroEvaluacion.objects.get(pk=fk_id_prm),
-                fk_id_cat=Categoria.objects.get(pk=fk_id_cat),
-                fk_id_unes=UnidadEscala.objects.get(pk=fk_id_unes),
-                valor_min_rub=valores_min[i],
-                valor_max_rub=valores_max[i],
-                puntaje_rub=puntajes[i],
-                estado_rub=True,
-                fecha_creacion_rub=timezone.now(),
-                fecha_actualizacion_rub=None
-            )
-
-        messages.success(request, "Rúbrica actualizada correctamente.")
-        return redirect('list_rubricas')
+        except Exception as e:
+            # Error general
+            messages.error(request, f"Hubo un error: {str(e)}")
+            print(f"Error completo: {e}")
+            return redirect('edit_rubrica', pk=pk)
 
     return render(request, 'Rubrica/editRubrica.html', {
         'rubrica': rubrica,
+        'tipos': tipos,
         'parametros': parametros,
         'categorias': categorias,
         'unidades': unidades,
         'escalas': escalas,
+        'es_cualitativa': es_cualitativa,  # Pasamos esta información al template
         'rol_usuario': request.user.rol_usu,
         'usuario': request.user
     })
@@ -1838,7 +2094,8 @@ def list_pruebas(request):
         'fk_id_ent__fk_id_usu',  # entrenador.usuario
         'fk_id_jug__fk_id_usu',  # jugador.usuario
         'fk_id_tip',
-        'fk_id_temp'
+        'fk_id_temp',
+        'fk_id_ciclo'
     ).all().order_by('-fecha_pru', '-id_pru')
 
     return render(request, 'Prueba/listPrueba.html', {
@@ -1897,14 +2154,14 @@ def add_prueba(request):
 
     tipos = TipoEvaluacion.objects.filter(estado_tip=True)
     temporadas = Temporada.objects.all()
-    macros = ['MACRO 1', 'MACRO 2', 'MACRO 3', 'MACRO 4', 'MACRO 5', 'MACRO 6', 'MACRO 7', 'MACRO 8', 'MACRO 9', 'MACRO 10']
+    ciclos = CicloDeEntrenamiento.objects.all()
     hoy = timezone.now().date().isoformat()
 
     valores = {
         'fk_id_jug': request.POST.get('fk_id_jug') or '',
         'fk_id_tip': request.POST.get('fk_id_tip') or '',
         'fk_id_temp': request.POST.get('fk_id_temp') or '',
-        'macro_pru': request.POST.get('macro_pru') or '',
+        'fk_id_ciclo': request.POST.get('fk_id_ciclo') or '',
         'fecha_pru': request.POST.get('fecha_pru') or hoy,
         'observaciones_pru': request.POST.get('observaciones_pru') or '',
     }
@@ -1913,7 +2170,7 @@ def add_prueba(request):
         fk_id_jug = request.POST.get('fk_id_jug')
         fk_id_tip = request.POST.get('fk_id_tip')
         fk_id_temp = request.POST.get('fk_id_temp')
-        macro_pru = request.POST.get('macro_pru')
+        fk_id_ciclo = request.POST.get('fk_id_ciclo')
         fecha_pru = request.POST.get('fecha_pru')
         observaciones_pru = request.POST.get('observaciones_pru')
 
@@ -1922,7 +2179,25 @@ def add_prueba(request):
         unidades = request.POST.getlist('unidad[]')
         notas_calculadas = request.POST.getlist('nota_calculada[]')
 
-        notas_float = [float(v) for v in notas_calculadas if v != '' and v is not None]
+        # Validar que tengamos datos
+        if not parametros_ids or not valores_observados or not notas_calculadas:
+            messages.error(request, "Faltan datos en el formulario.")
+            return redirect('add_prueba')
+
+        # Obtener el tipo de evaluación para verificar si es cualitativo
+        tipo_evaluacion = TipoEvaluacion.objects.get(pk=fk_id_tip)
+        es_cualitativo = tipo_evaluacion.cualitativa_tip
+
+        # Procesar las notas calculadas
+        notas_float = []
+        for nota in notas_calculadas:
+            if nota != '' and nota is not None:
+                try:
+                    notas_float.append(float(nota))
+                except ValueError:
+                    messages.error(request, "Error en el cálculo de las notas.")
+                    return redirect('add_prueba')
+
         promedio_pru = round(sum(notas_float) / len(notas_float), 2) if notas_float else 0
 
         entrenador = None
@@ -1933,33 +2208,50 @@ def add_prueba(request):
                 return redirect('add_prueba')
 
         try:
+            # Crear la prueba
             prueba = Prueba.objects.create(
                 fk_id_ent=entrenador,  # Si es admin/admin_dios será None
                 fk_id_jug_id=fk_id_jug,
                 fk_id_tip_id=fk_id_tip,
                 fk_id_temp_id=fk_id_temp,
-                macro_pru=macro_pru,
+                fk_id_ciclo_id=fk_id_ciclo,
                 promedio_pru=promedio_pru,
                 observaciones_pru=observaciones_pru,
                 fecha_pru=fecha_pru,
                 estado_pru=True,
             )
-            for id_prm, val_obs, unidad, nota in zip(parametros_ids, valores_observados, unidades, notas_calculadas):
+            
+            # Crear los detalles de la prueba
+            for i, (id_prm, val_obs, unidad, nota) in enumerate(zip(parametros_ids, valores_observados, unidades, notas_calculadas)):
+                # Validar que el valor observado no esté vacío
+                if not val_obs:
+                    continue
+                
+                # Validar que la nota calculada no esté vacía
+                if not nota:
+                    continue
+                
+                # El valor observado puede ser texto (cualitativo) o número (cuantitativo)
+                # Lo guardamos como texto en el campo TextField
                 DetallePrueba.objects.create(
                     fk_id_pru=prueba,
                     fk_id_prm_id=id_prm,
-                    valor_observado=val_obs,
-                    unidad=unidad,
-                    nota_calculada=nota,
+                    valor_observado=str(val_obs),  # Convertir a string para almacenamiento
+                    unidad=unidad if not es_cualitativo else '',  # Sin unidad para cualitativo
+                    nota_calculada=float(nota),  # Convertir a float para la nota
                 )
+            
+            # Actualizar el promedio del jugador
             actualizar_promedio_jugador(
                 jugador=prueba.fk_id_jug,
-                macro=prueba.macro_pru,
+                ciclo=prueba.fk_id_ciclo,
                 tipo=prueba.fk_id_tip,
                 temporada=prueba.fk_id_temp
             )
+            
             messages.success(request, "Prueba registrada correctamente. Promedio: %.2f" % promedio_pru)
             return redirect('list_pruebas')
+            
         except Exception as e:
             messages.error(request, f"Ocurrió un error al guardar la prueba: {e}")
             return redirect('add_prueba')
@@ -1968,7 +2260,7 @@ def add_prueba(request):
         'jugadores': jugadores,
         'tipos': tipos,
         'temporadas': temporadas,
-        'macros': macros,
+        'ciclos': ciclos,
         'valores': valores,
         'hoy': hoy,
         'rol_usuario': request.user.rol_usu,
@@ -1983,26 +2275,60 @@ def ajax_parametros_rubrica(request):
     if not (tipo_id and jug_id):
         return JsonResponse({'parametros': [], 'tienen_todas_rubrica': True})
 
+    # Obtener el jugador y su categoría
     jugador = Jugador.objects.get(pk=jug_id)
     cat_id = jugador.fk_id_cat_id if jugador.fk_id_cat else None
+    
+    # Obtener el tipo de evaluación para verificar si es cualitativo
+    tipo_evaluacion = TipoEvaluacion.objects.get(pk=tipo_id)
+    es_cualitativo = tipo_evaluacion.cualitativa_tip
+    
+    # Obtener los parámetros del tipo de evaluación
     parametros = ParametroEvaluacion.objects.filter(fk_tipo_evaluacion_id=tipo_id, estado_prm=True)
     parametros_data = []
     todas_tienen_rubrica = True
+    
     for prm in parametros:
-        rubricas = list(Rubrica.objects.filter(fk_id_prm=prm, fk_id_cat_id=cat_id, estado_rub=True)
-                        .values('valor_min_rub','valor_max_rub','puntaje_rub','fk_id_unes__nombre_unes'))
-        unidad = rubricas[0]['fk_id_unes__nombre_unes'] if rubricas else ''
+        if es_cualitativo:
+            # Para evaluaciones cualitativas, obtenemos las rúbricas cualitativas
+            rubricas = list(Rubrica.objects.filter(
+                fk_id_prm=prm, 
+                fk_id_cat_id=cat_id, 
+                estado_rub=True,
+                rubrica_cualitativa__isnull=False  # Solo las que tienen criterio cualitativo
+            ).values('rubrica_cualitativa', 'puntaje_rub'))
+            
+            # La unidad no aplica para evaluaciones cualitativas
+            unidad = ''
+        else:
+            # Para evaluaciones cuantitativas, obtenemos las rúbricas cuantitativas
+            rubricas = list(Rubrica.objects.filter(
+                fk_id_prm=prm, 
+                fk_id_cat_id=cat_id, 
+                estado_rub=True,
+                valor_min_rub__isnull=False,  # Solo las que tienen valores numéricos
+                valor_max_rub__isnull=False
+            ).values('valor_min_rub', 'valor_max_rub', 'puntaje_rub', 'fk_id_unes__nombre_unes'))
+            
+            # Para evaluaciones cuantitativas, obtenemos la unidad
+            unidad = rubricas[0]['fk_id_unes__nombre_unes'] if rubricas else ''
+        
+        # Verificar si el parámetro tiene rúbrica
         if not rubricas:
             todas_tienen_rubrica = False
+        
         parametros_data.append({
             'id_prm': prm.id_prm,
             'nombre_prm': prm.nombre_prm,
             'unidad': unidad,
             'rubricas': rubricas,
+            'es_cualitativo': es_cualitativo,  # Nueva propiedad para indicar el tipo
         })
-    return JsonResponse({'parametros': parametros_data, 'tienen_todas_rubrica': todas_tienen_rubrica})
-
-
+    
+    return JsonResponse({
+        'parametros': parametros_data, 
+        'tienen_todas_rubrica': todas_tienen_rubrica
+    })
 
 # editar
 from django.shortcuts import render, get_object_or_404, redirect
@@ -2026,6 +2352,7 @@ def edit_prueba(request, id_pru):
             'fk_id_ent__fk_id_usu',
             'fk_id_jug__fk_id_usu',
             'fk_id_tip',
+            'fk_id_ciclo',
             'fk_id_temp'
         ),
         pk=id_pru
@@ -2041,7 +2368,7 @@ def edit_prueba(request, id_pru):
 
     tipos = TipoEvaluacion.objects.filter(estado_tip=True)
     temporadas = Temporada.objects.all()
-    macros = ['MACRO 1', 'MACRO 2']
+    ciclos = CicloDeEntrenamiento.objects.all()
 
     # Prepara detalles con rubricas_json para cada parámetro
     detalles = prueba.detalles.select_related('fk_id_prm').all()
@@ -2058,7 +2385,7 @@ def edit_prueba(request, id_pru):
         fk_id_jug = request.POST.get('fk_id_jug')
         fk_id_tip = request.POST.get('fk_id_tip')
         fk_id_temp = request.POST.get('fk_id_temp')
-        macro_pru = request.POST.get('macro_pru')
+        fk_id_ciclo = request.POST.get('fk_id_ciclo')
         fecha_pru = request.POST.get('fecha_pru')
         observaciones_pru = request.POST.get('observaciones_pru')
 
@@ -2075,7 +2402,7 @@ def edit_prueba(request, id_pru):
             prueba.fk_id_jug_id = fk_id_jug
             prueba.fk_id_tip_id = fk_id_tip
             prueba.fk_id_temp_id = fk_id_temp
-            prueba.macro_pru = macro_pru
+            prueba.fk_id_ciclo_id = fk_id_ciclo
             prueba.promedio_pru = promedio_pru
             prueba.observaciones_pru = observaciones_pru
 
@@ -2104,7 +2431,7 @@ def edit_prueba(request, id_pru):
             # LLAMA LA FUNCION PARA GUARDAR/ACTUALIZAR PROMEDIOJUGADOR
             actualizar_promedio_jugador(
                 jugador=prueba.fk_id_jug,
-                macro=prueba.macro_pru,
+                ciclo=prueba.fk_id_ciclo,
                 tipo=prueba.fk_id_tip,
                 temporada=prueba.fk_id_temp
             )
@@ -2125,7 +2452,8 @@ def edit_prueba(request, id_pru):
         'fk_id_jug': prueba.fk_id_jug_id,
         'fk_id_tip': prueba.fk_id_tip_id,
         'fk_id_temp': prueba.fk_id_temp_id,
-        'macro_pru': prueba.macro_pru,
+        'fk_id_ciclo': prueba.fk_id_ciclo_id,
+
         'fecha_pru': fecha_pru_val,
         'observaciones_pru': prueba.observaciones_pru or '',
     }
@@ -2136,7 +2464,7 @@ def edit_prueba(request, id_pru):
         'jugadores': jugadores,
         'tipos': tipos,
         'temporadas': temporadas,
-        'macros': macros,
+        'ciclos': ciclos,
         'valores': valores,
         'rol_usuario': request.user.rol_usu,
         'usuario': request.user,
@@ -2165,12 +2493,12 @@ def delete_prueba(request, id_pru):
 
 # ----------------------------------------------notas equipo-------------------------------------------
 
-def actualizar_promedio_jugador(jugador, macro, tipo, temporada):
+def actualizar_promedio_jugador(jugador, ciclo, tipo, temporada):
     from .models import Prueba, PromedioJugador, TipoEvaluacion
     # Busca todas las pruebas de este jugador, macro, tipo, temporada (puede haber varias si se repite)
     pruebas = Prueba.objects.filter(
         fk_id_jug=jugador,
-        macro_pru=macro,
+        fk_id_ciclo=ciclo,
         fk_id_tip=tipo,
         fk_id_temp=temporada
     )
@@ -2182,7 +2510,7 @@ def actualizar_promedio_jugador(jugador, macro, tipo, temporada):
     # Guarda o actualiza el promedio
     PromedioJugador.objects.update_or_create(
         jugador_proju=jugador,
-        macro_proju=macro,
+        fk_id_ciclo=ciclo,
         tipo_proju=tipo,
         temporada_proju=temporada,
         defaults={'promedio_proju': promedio}
@@ -2194,82 +2522,118 @@ from .models import PromedioJugador
 def promedios_jugadores_equipo(request):
     user = request.user
     temporadas = Temporada.objects.all()
-    temporada_id = request.GET.get('temporada')
-    macro_filtro = request.GET.get('macro', 'ambos')
+    temporada_id = request.GET.get('temporada')  # Puede ser vacío
+    ciclo_id = request.GET.get('ciclo')  # Puede ser vacío
+    jugador_id = request.GET.get('jugador')  # Nuevo filtro por jugador
     tipos = TipoEvaluacion.objects.filter(estado_tip=True)
     equipo = None
     jugadores = []
     equipo_nombre = "Sin equipo"
-    macros_lista = ['MACRO 1', 'MACRO 2']
+    ciclos = CicloDeEntrenamiento.objects.all()
 
+    # Obtener temporada seleccionada (puede ser None)
+    temporada = None
+    if temporada_id:
+        try:
+            temporada = Temporada.objects.get(id_temp=temporada_id)
+        except Temporada.DoesNotExist:
+            temporada = None
+
+    # Obtener jugadores según el rol del usuario
+    todos_jugadores = []  # Lista completa para el select
     if user.rol_usu == 'entrenador':
         entrenador = Entrenador.objects.filter(fk_id_usu=user).first()
         if entrenador:
-            if temporada_id:
-                temporada = Temporada.objects.get(id_temp=temporada_id)
+            # Si hay temporada seleccionada, filtrar por esa temporada
+            if temporada:
                 equipo = Equipo.objects.filter(fk_id_ent=entrenador, fk_id_temp=temporada).first()
             else:
+                # Si no hay temporada, obtener el primer equipo del entrenador
                 equipo = Equipo.objects.filter(fk_id_ent=entrenador).first()
+            
             if equipo:
                 equipo_nombre = equipo.nombre_equ or "Sin nombre"
-                jugadores = Jugador.objects.filter(fk_id_equ=equipo)
+                todos_jugadores = Jugador.objects.filter(fk_id_equ=equipo)
             else:
-                jugadores = []
+                todos_jugadores = []
     else:
         equipo_nombre = "Todos los equipos"
-        jugadores = Jugador.objects.all()
+        todos_jugadores = Jugador.objects.all()
 
-    # Filtros
-    if macro_filtro in macros_lista:
-        macros_a_mostrar = [macro_filtro]
+    # Filtrar jugadores según selección
+    if jugador_id and jugador_id != 'todos':
+        try:
+            jugadores = todos_jugadores.filter(id_jug=jugador_id)
+        except:
+            jugadores = todos_jugadores
     else:
-        macros_a_mostrar = macros_lista
+        jugadores = todos_jugadores
 
-    # Busca promedios guardados (no calcula en tiempo real)
+    # Filtrar ciclos según selección
+    ciclos_filtrados = ciclos  # Por defecto todos los ciclos
+    if ciclo_id and ciclo_id != 'ambos':
+        try:
+            ciclos_filtrados = CicloDeEntrenamiento.objects.filter(id_ciclo=ciclo_id)
+        except:
+            ciclos_filtrados = ciclos
+
+    # Buscar promedios guardados con filtros opcionales
     datos = []
     for jugador in jugadores:
-        for macro in macros_a_mostrar:
+        for ciclo in ciclos_filtrados:
+            # Crear filtro base para PromedioJugador
+            filtro_promedio = {
+                'jugador_proju': jugador,
+                'fk_id_ciclo': ciclo,
+            }
+            
+            # Agregar filtro de temporada solo si está seleccionada
+            if temporada:
+                filtro_promedio['temporada_proju_id'] = temporada.id_temp
+
             fila = {
                 'jugador': jugador,
-                'macro': macro,
+                'ciclo': ciclo,
                 'tipos': [],
                 'promedio_general': "0.00",
             }
+            
             promedios_tipo = []
+            tiene_datos = False
+            
             for tipo in tipos:
+                filtro_promedio['tipo_proju'] = tipo
                 promedio_obj = PromedioJugador.objects.filter(
-                    jugador_proju=jugador,
-                    macro_proju=macro,
-                    tipo_proju=tipo,
-                    temporada_proju_id=temporada_id
+                    **filtro_promedio
                 ).order_by('-fecha_calculo_proju').first()
+                
                 nota = promedio_obj.promedio_proju if promedio_obj else 0
+                if promedio_obj:
+                    tiene_datos = True
+                    
                 fila['tipos'].append({
                     'tipo': tipo.nombre_tip,
                     'nota': f"{nota:.2f}"
                 })
                 promedios_tipo.append(float(nota))
-            fila['promedio_general'] = f"{(sum(promedios_tipo)/len(promedios_tipo)):.2f}" if promedios_tipo else "0.00"
-            datos.append(fila)
+            
+            # Solo agregar la fila si tiene datos o si no hay filtros aplicados
+            if tiene_datos or (not temporada_id and not ciclo_id and not jugador_id):
+                fila['promedio_general'] = f"{(sum(promedios_tipo)/len(promedios_tipo)):.2f}" if promedios_tipo else "0.00"
+                datos.append(fila)
 
     context = {
         'temporadas': temporadas,
-        'temporada_actual': int(temporada_id) if temporada_id else '',
+        'temporada_actual': temporada.id_temp if temporada else '',
         'tipos': tipos,
         'datos': datos,
         'equipo_nombre': equipo_nombre,
-        'macro_filtro': macro_filtro,
+        'ciclo_id': ciclo_id if ciclo_id else 'ambos',
+        'ciclos': ciclos,
+        'jugador_id': jugador_id if jugador_id else 'todos',
+        'jugadores': todos_jugadores  # Para el select de jugadores
     }
     return render(request, 'Notas/promedios_guardados_equipo.html', context)
-
-
-
-
-
-#--------------------------------- BORRAR DESPUES -------------------------
-
-
-
 
 @login_required
 def get_parametros(request, evaluacion_id):
@@ -2284,7 +2648,85 @@ def get_parametros(request, evaluacion_id):
 
 
 
+#-------------------------------------CICLOS-------------------------------------
+@login_required
+def list_ciclo(request):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.warning(request, "No tienes permiso para acceder aquí.")
+        return redirect('admin_dashboard')
 
+    ciclos = CicloDeEntrenamiento.objects.all()
+    context = {
+        'ciclos': ciclos,
+        'rol_usuario': request.user.rol_usu,
+        'usuario': request.user
+    }
+    return render(request, 'Ciclo/listCiclo.html', context)
+
+@login_required
+def add_ciclo(request):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para crear ciclos.")
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        # Forzar que el nombre del ciclo sea en mayúsculas antes de guardar
+        nombre_ciclo = request.POST['nombre_ciclo'].strip().upper()  # Cambiado a .upper()
+        estado_ciclo = True
+        fecha_creacion_ciclo = timezone.now()
+        fecha_actualizacion_ciclo = None
+
+        # Crear y guardar el nuevo ciclo
+        ciclo = CicloDeEntrenamiento(
+            nombre_ciclo=nombre_ciclo,
+            estado_ciclo=estado_ciclo,
+            fecha_creacion_ciclo=fecha_creacion_ciclo,
+            fecha_actualizacion_ciclo=fecha_actualizacion_ciclo,
+        )
+        ciclo.save()
+        messages.success(request, f"Ciclo '{nombre_ciclo}' creado exitosamente.")
+        return redirect('list_ciclo')
+
+    return render(request, 'Ciclo/addCiclo.html', {'rol_usuario': request.user.rol_usu, 'usuario': request.user})
+
+@login_required
+def edit_ciclo(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'admin', 'entrenador']:
+        messages.error(request, "No tienes permiso para editar ciclos.")
+        return redirect('list_ciclo')
+
+    ciclo = get_object_or_404(CicloDeEntrenamiento, pk=pk)
+
+    if request.method == 'POST':
+        # Forzar mayúsculas en el nombre del ciclo
+        ciclo.nombre_ciclo = request.POST['nombre_ciclo'].strip().upper()  # Cambiado a .upper()
+        ciclo.estado_ciclo = request.POST.get('estado_ciclo', False)
+        ciclo.fecha_actualizacion_ciclo = timezone.now()
+        ciclo.save()
+        messages.success(request, "Ciclo actualizado correctamente.")
+        return redirect('list_ciclo')
+
+    return render(request, 'Ciclo/editCiclo.html', {'ciclo': ciclo, 'rol_usuario': request.user.rol_usu, 'usuario': request.user})
+
+
+
+@login_required
+def delete_ciclo(request, pk):
+    if request.user.rol_usu not in ['admin_dios', 'admin']:
+        messages.error(request, "No tienes permiso para esta acción.")
+        return redirect('list_ciclo')
+
+    if request.method == 'POST':
+        try:
+            # Intentamos obtener la ciclo a eliminar
+            ciclo = get_object_or_404(CicloDeEntrenamiento, pk=pk)
+
+            ciclo.delete()
+            messages.success(request, "Ciclo eliminado correctamente.")
+        except Exception as e:
+            messages.error(request, f"Ocurrió un error inesperado: {e}")
+
+    return redirect('list_ciclo')
 
 
 #DASHBOARD
@@ -2293,41 +2735,365 @@ def get_parametros(request, evaluacion_id):
 
 
 
-
+#------------------------------ DASHBOARD ADMIN-------------------------------------
 # views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db import models
+from django.db.models import Avg, Count, Q, Max
+from django.utils import timezone
+from datetime import datetime, timedelta
+import json
+from collections import defaultdict
+
+# Asegúrate de importar tus modelos
+# from .models import Usuario, Entrenador, Jugador, Equipo, Prueba, TipoEvaluacion, CicloDeEntrenamiento, Temporada, Categoria
+
 @login_required
 def dashboard_admin(request):
+    # Verificar que el usuario sea administrador
     if request.user.rol_usu != 'admin':
-        return redirect('home')
-    return render(request, 'dashboard_admin.html')
+        messages.error(request, "No tienes permisos para acceder a esta página.")
+        return redirect('admin_dashboard')
+
+    # Estadísticas básicas
+    total_jugadores = Jugador.objects.filter(fk_id_usu__estado_usu='activo').count()
+    total_equipos = Equipo.objects.count()
+    total_entrenadores = Entrenador.objects.filter(fk_id_usu__estado_usu='activo').count()
+    total_pruebas = Prueba.objects.count()
+
+    # Datos para gráficas
+    rendimiento_jugador = get_rendimiento_jugador_admin()
+    valoracion_equipos = get_valoracion_equipos_admin()
+    ultimos_ingresos = get_ultimos_ingresos_admin()
+    top5_general = get_top5_general_admin()
+    distribucion_categorias = get_distribucion_categorias_admin()
+    evaluaciones_tipo = get_evaluaciones_tipo_admin()
+    rendimiento_temporada = get_rendimiento_temporada_admin()
+    actividad_reciente = get_actividad_reciente_admin()
+
+    # Resumen de equipos
+    resumen_equipos = get_resumen_equipos_admin()
+
+    # Últimas pruebas realizadas
+    ultimas_pruebas = Prueba.objects.select_related(
+        'fk_id_jug__fk_id_usu',
+        'fk_id_jug__fk_id_equ',
+        'fk_id_tip',
+        'fk_id_ent__fk_id_usu'
+    ).order_by('-fecha_pru')[:10]
+
+    context = {
+        'usuario': request.user,
+        'total_jugadores': total_jugadores,
+        'total_equipos': total_equipos,
+        'total_entrenadores': total_entrenadores,
+        'total_pruebas': total_pruebas,
+        'rol_usuario': request.user.rol_usu,
+        
+        # Datos para gráficas (convertidos a JSON)
+        'rendimiento_jugador': json.dumps(rendimiento_jugador),
+        'valoracion_equipos': json.dumps(valoracion_equipos),
+        'ultimos_ingresos': json.dumps(ultimos_ingresos),
+        'top5_general': json.dumps(top5_general),
+        'distribucion_categorias': json.dumps(distribucion_categorias),
+        'evaluaciones_tipo': json.dumps(evaluaciones_tipo),
+        'rendimiento_temporada': json.dumps(rendimiento_temporada),
+        'actividad_reciente': json.dumps(actividad_reciente),
+        
+        # Datos para tablas
+        'resumen_equipos': resumen_equipos,
+        'ultimas_pruebas': ultimas_pruebas,
+    }
+
+    return render(request, 'Dashboard/dashboard_admin.html', context )
 
 
+def get_rendimiento_jugador_admin():
+    """
+    Obtiene el rendimiento promedio de los top 10 jugadores del sistema
+    """
+    # Obtener jugadores activos con su promedio de pruebas
+    jugadores_promedio = Prueba.objects.filter(
+        fk_id_jug__fk_id_usu__estado_usu='activo'
+    ).values(
+        'fk_id_jug__fk_id_usu__nombres_usu',
+        'fk_id_jug__fk_id_usu__primer_apellido_usu'
+    ).annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('-promedio')[:10]
+    
+    labels = []
+    data = []
+    
+    for jugador in jugadores_promedio:
+        nombre_completo = f"{jugador['fk_id_jug__fk_id_usu__nombres_usu']} {jugador['fk_id_jug__fk_id_usu__primer_apellido_usu']}"
+        labels.append(nombre_completo)
+        data.append(float(jugador['promedio']) if jugador['promedio'] else 0)
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_valoracion_equipos_admin():
+    """
+    Obtiene la valoración promedio por equipos
+    """
+    equipos_promedio = Prueba.objects.filter(
+        fk_id_jug__fk_id_equ__isnull=False
+    ).values(
+        'fk_id_jug__fk_id_equ__nombre_equ'
+    ).annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('-promedio')
+    
+    labels = []
+    data = []
+    
+    for equipo in equipos_promedio:
+        labels.append(equipo['fk_id_jug__fk_id_equ__nombre_equ'])
+        data.append(float(equipo['promedio']) if equipo['promedio'] else 0)
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_ultimos_ingresos_admin():
+    """
+    Obtiene los ingresos de entrenadores en los últimos 30 días
+    """
+    fecha_inicio = timezone.now().date() - timedelta(days=30)
+    
+    # Obtener el número de entrenadores que han ingresado por día
+    ingresos = Entrenador.objects.filter(
+        fk_id_usu__last_login__gte=fecha_inicio
+    ).values(
+        'fk_id_usu__last_login__date'
+    ).annotate(
+        total=Count('id_ent')
+    ).order_by('fk_id_usu__last_login__date')
+    
+    labels = []
+    data = []
+    
+    for ingreso in ingresos:
+        if ingreso['fk_id_usu__last_login__date']:
+            labels.append(ingreso['fk_id_usu__last_login__date'].strftime('%d/%m'))
+            data.append(ingreso['total'])
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_top5_general_admin():
+    """
+    Obtiene los top 5 jugadores con mejor rendimiento general
+    """
+    top_jugadores = Prueba.objects.values(
+        'fk_id_jug__fk_id_usu__nombres_usu',
+        'fk_id_jug__fk_id_usu__primer_apellido_usu'
+    ).annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('-promedio')[:5]
+    
+    labels = []
+    data = []
+    
+    for jugador in top_jugadores:
+        nombre_completo = f"{jugador['fk_id_jug__fk_id_usu__nombres_usu']} {jugador['fk_id_jug__fk_id_usu__primer_apellido_usu']}"
+        labels.append(nombre_completo)
+        data.append(float(jugador['promedio']) if jugador['promedio'] else 0)
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_distribucion_categorias_admin():
+    """
+    Obtiene la distribución de equipos por categorías
+    """
+    try:
+        # Obtener equipos por categoría
+        categorias = Categoria.objects.annotate(
+            total_equipos=Count('equipos')
+        ).filter(total_equipos__gt=0)
+        
+        labels = []
+        data = []
+        
+        for categoria in categorias:
+            labels.append(categoria.nombre_cat)
+            data.append(categoria.total_equipos)
+        
+        return {
+            'labels': labels,
+            'data': data
+        }
+    except:
+        # Si no existe el modelo Categoria o hay error
+        return {
+            'labels': ['Sin categorías'],
+            'data': [0]
+        }
+
+
+def get_evaluaciones_tipo_admin():
+    """
+    Obtiene el número de evaluaciones por tipo
+    """
+    tipos_evaluacion = TipoEvaluacion.objects.annotate(
+        total_pruebas=Count('prueba')
+    ).filter(total_pruebas__gt=0)
+    
+    labels = []
+    data = []
+    
+    for tipo in tipos_evaluacion:
+        labels.append(tipo.nombre_tip)
+        data.append(tipo.total_pruebas)
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_rendimiento_temporada_admin():
+    """
+    Obtiene el rendimiento promedio por temporada
+    """
+    temporadas = Temporada.objects.annotate(
+        promedio=models.Avg('prueba__promedio_pru')
+    ).filter(promedio__isnull=False).order_by('fecha_inicio_temp')
+    
+    labels = []
+    data = []
+    
+    for temporada in temporadas:
+        labels.append(temporada.nombre_temp)
+        data.append(float(temporada.promedio) if temporada.promedio else 0)
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_actividad_reciente_admin():
+    """
+    Obtiene la actividad reciente del sistema (pruebas por día en los últimos 7 días)
+    """
+    fecha_inicio = timezone.now().date() - timedelta(days=7)
+    
+    actividad = Prueba.objects.filter(
+        fecha_pru__gte=fecha_inicio
+    ).values('fecha_pru').annotate(
+        total=Count('id_pru')
+    ).order_by('fecha_pru')
+    
+    labels = []
+    data = []
+    
+    for dia in actividad:
+        labels.append(dia['fecha_pru'].strftime('%d/%m'))
+        data.append(dia['total'])
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_resumen_equipos_admin():
+    """
+    Obtiene el resumen detallado de todos los equipos
+    """
+    equipos = Equipo.objects.select_related(
+        'fk_id_ent__fk_id_usu'
+    ).prefetch_related('categorias').annotate(
+        total_jugadores=Count('jugador', filter=Q(jugador__fk_id_usu__estado_usu='activo')),
+        promedio_general=models.Avg('jugador__prueba__promedio_pru'),
+        ultima_evaluacion=Max('jugador__prueba__fecha_pru')
+    )
+    
+    return equipos
+
+#------------------------------ DASHBOARD ENTRENADOR-------------------------------------
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db import models
+from django.db.models import Avg, Count, Q
+from django.utils import timezone
+from datetime import datetime, timedelta
+import json
+from collections import defaultdict
 @login_required
 def dashboard_entrenador(request):
     # Obtener el entrenador logueado
-    entrenador = Entrenador.objects.get(fk_id_usu=request.user)  # Obtener el entrenador asociado al usuario logueado
-    
-    # Intentamos obtener el equipo asociado al entrenador
-    equipo = Equipo.objects.filter(fk_id_ent=entrenador).first()  # Obtener el primer equipo del entrenador
+    try:
+        entrenador = Entrenador.objects.get(fk_id_usu=request.user)
+    except Entrenador.DoesNotExist:
+        messages.error(request, "No se encontró el entrenador asociado a este usuario.")
+        return redirect('admin_dashboard')
 
-    # Verificar si el entrenador tiene un equipo
+    # Obtener el equipo asociado al entrenador
+    equipo = Equipo.objects.filter(fk_id_ent=entrenador).first()
     if equipo is None:
         messages.error(request, "Este entrenador no tiene un equipo asignado.")
         return redirect('admin_dashboard')
 
-    # Filtrar jugadores activos asociados al equipo del entrenador
-    jugadores_activos = Jugador.objects.filter(fk_id_equ=equipo, fk_id_usu__estado_usu='activo').count()
-
-    # Número de pruebas realizadas por el entrenador
+    # Datos básicos
+    jugadores_activos = Jugador.objects.filter(
+        fk_id_equ=equipo, 
+        fk_id_usu__estado_usu='activo'
+    ).count()
+    
     pruebas_realizadas = Prueba.objects.filter(fk_id_ent=entrenador).count()
+    
+    promedio_general = Prueba.objects.filter(
+        fk_id_ent=entrenador
+    ).aggregate(promedio=models.Avg('promedio_pru'))['promedio'] or 0
+    
+    ultimas_pruebas = Prueba.objects.filter(
+        fk_id_ent=entrenador
+    ).order_by('-fecha_pru')[:5]
 
-    # Promedio general de las pruebas realizadas por el entrenador
-    promedio_general = Prueba.objects.filter(fk_id_ent=entrenador).aggregate(promedio=models.Avg('promedio_pru'))['promedio'] or 0
+    # KPI 1: Rendimiento por Jugador (Top 5)
+    rendimiento_jugadores = get_rendimiento_por_jugador(entrenador)
+    
+    # KPI 2: Rendimiento por Mesociclo
+    rendimiento_mesociclo = get_rendimiento_por_mesociclo(entrenador)
+    
+    # KPI 3: Rendimiento por Temporada
+    rendimiento_temporada = get_rendimiento_por_temporada(entrenador)
+    
+    # KPI 4: Valoración General (por tipo de evaluación)
+    valoracion_general = get_valoracion_general(entrenador)
+    
+    # KPI 5: Últimos Ingresos (pruebas por fecha)
+    ultimos_ingresos = get_ultimos_ingresos(entrenador)
+    
+    # Datos adicionales para el dashboard
+    pruebas_mes = Prueba.objects.filter(
+        fk_id_ent=entrenador,
+        fecha_pru__month=timezone.now().month,
+        fecha_pru__year=timezone.now().year
+    ).count()
+    
+    mejor_jugador = get_mejor_jugador(entrenador)
+    temporada_actual = get_temporada_actual()
 
-    # Últimas 5 pruebas realizadas por el entrenador
-    ultimas_pruebas = Prueba.objects.filter(fk_id_ent=entrenador).order_by('-fecha_pru')[:5]
-
-    # Datos del contexto para la plantilla
     context = {
         'equipo': equipo,
         'jugadores_activos': jugadores_activos,
@@ -2336,15 +3102,572 @@ def dashboard_entrenador(request):
         'ultimas_pruebas': ultimas_pruebas,
         'usuario': request.user,
         'rol_usuario': request.user.rol_usu,
+        
+        # Datos para gráficas (convertidos a JSON)
+        'rendimiento_jugadores': json.dumps(rendimiento_jugadores),
+        'rendimiento_mesociclo': json.dumps(rendimiento_mesociclo),
+        'rendimiento_temporada': json.dumps(rendimiento_temporada),
+        'valoracion_general': json.dumps(valoracion_general),
+        'ultimos_ingresos': json.dumps(ultimos_ingresos),
+        
+        # Datos adicionales
+        'pruebas_mes': pruebas_mes,
+        'mejor_jugador': mejor_jugador,
+        'temporada_actual': temporada_actual,
     }
 
-    # Renderizamos el dashboard para el entrenador
     return render(request, 'Dashboard/dashboard_entrenador.html', context)
 
+
+def get_rendimiento_por_jugador(entrenador):
+    """
+    Obtiene el rendimiento promedio de los top 5 jugadores
+    """
+    # Obtener jugadores del equipo del entrenador
+    jugadores = Jugador.objects.filter(
+        fk_id_equ__fk_id_ent=entrenador,
+        fk_id_usu__estado_usu='activo'
+    )
+    
+    rendimiento_data = []
+    
+    for jugador in jugadores:
+        promedio = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_ent=entrenador
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio:
+            rendimiento_data.append({
+                'jugador': f"{jugador.fk_id_usu.nombres_usu} {jugador.fk_id_usu.primer_apellido_usu}",
+                'promedio': float(promedio)
+            })
+    
+    # Ordenar por promedio y tomar top 5
+    rendimiento_data.sort(key=lambda x: x['promedio'], reverse=True)
+    top_5 = rendimiento_data[:5]
+    
+    return {
+        'labels': [item['jugador'] for item in top_5],
+        'data': [item['promedio'] for item in top_5]
+    }
+
+
+def get_rendimiento_por_mesociclo(entrenador):
+    """
+    Obtiene el rendimiento promedio por mesociclo
+    """
+    # Obtener todos los mesociclos con pruebas
+    mesociclos = CicloDeEntrenamiento.objects.filter(
+        prueba__fk_id_ent=entrenador
+    ).distinct().order_by('nombre_ciclo')
+    
+    labels = []
+    data = []
+    
+    for mesociclo in mesociclos:
+        promedio = Prueba.objects.filter(
+            fk_id_ent=entrenador,
+            fk_id_ciclo=mesociclo
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio:
+            labels.append(mesociclo.nombre_ciclo or f"Ciclo {mesociclo.id_ciclo}")
+            data.append(float(promedio))
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_rendimiento_por_temporada(entrenador):
+    """
+    Obtiene el rendimiento promedio por temporada
+    """
+    temporadas = Temporada.objects.filter(
+        prueba__fk_id_ent=entrenador
+    ).distinct()
+    
+    labels = []
+    data = []
+    
+    for temporada in temporadas:
+        promedio = Prueba.objects.filter(
+            fk_id_ent=entrenador,
+            fk_id_temp=temporada
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio:
+            labels.append(temporada.nombre_temp or f"Temporada {temporada.id_temp}")
+            data.append(float(promedio))
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_valoracion_general(entrenador):
+    """
+    Obtiene la valoración general por tipo de evaluación
+    """
+    tipos_evaluacion = TipoEvaluacion.objects.filter(
+        prueba__fk_id_ent=entrenador
+    ).distinct()
+    
+    labels = []
+    data = []
+    
+    for tipo in tipos_evaluacion:
+        promedio = Prueba.objects.filter(
+            fk_id_ent=entrenador,
+            fk_id_tip=tipo
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio:
+            labels.append(tipo.nombre_tip)
+            data.append(float(promedio))
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_ultimos_ingresos(entrenador):
+    """
+    Obtiene las pruebas realizadas en los últimos 30 días agrupadas por fecha
+    """
+    fecha_inicio = timezone.now().date() - timedelta(days=30)
+    
+    # Obtener pruebas de los últimos 30 días
+    pruebas = Prueba.objects.filter(
+        fk_id_ent=entrenador,
+        fecha_pru__gte=fecha_inicio
+    ).values('fecha_pru').annotate(
+        total=Count('id_pru')
+    ).order_by('fecha_pru')
+    
+    labels = []
+    data = []
+    
+    for prueba in pruebas:
+        labels.append(prueba['fecha_pru'].strftime('%d/%m'))
+        data.append(prueba['total'])
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_mejor_jugador(entrenador):
+    """
+    Obtiene el jugador con mejor promedio general
+    """
+    mejor = Prueba.objects.filter(
+        fk_id_ent=entrenador
+    ).values(
+        'fk_id_jug__fk_id_usu__nombres_usu',
+        'fk_id_jug__fk_id_usu__primer_apellido_usu'
+    ).annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('-promedio').first()
+    
+    if mejor:
+        return f"{mejor['fk_id_jug__fk_id_usu__nombres_usu']} {mejor['fk_id_jug__fk_id_usu__primer_apellido_usu']}"
+    
+    return "N/A"
+
+
+def get_temporada_actual():
+    """
+    Obtiene la temporada actual
+    """
+    temporada_actual = Temporada.objects.filter(
+        fecha_inicio_temp__lte=timezone.now().date(),
+        fecha_fin_temp__gte=timezone.now().date()
+    ).first()
+    
+    if temporada_actual:
+        return temporada_actual.nombre_temp
+    
+    # Si no hay temporada actual, obtener la más reciente
+    temporada_reciente = Temporada.objects.order_by('-fecha_inicio_temp').first()
+    return temporada_reciente.nombre_temp if temporada_reciente else "N/A"
+
+
+# Función adicional para obtener estadísticas detalladas por jugador
+def get_estadisticas_jugador(jugador_id, entrenador):
+    """
+    Obtiene estadísticas detalladas de un jugador específico
+    """
+    try:
+        jugador = Jugador.objects.get(id_jug=jugador_id, fk_id_ent=entrenador)
+        
+        # Promedio general del jugador
+        promedio_general = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_ent=entrenador
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio'] or 0
+        
+        # Número de pruebas realizadas
+        total_pruebas = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_ent=entrenador
+        ).count()
+        
+        # Última prueba
+        ultima_prueba = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_ent=entrenador
+        ).order_by('-fecha_pru').first()
+        
+        # Evolución en los últimos 6 meses
+        fecha_inicio = timezone.now().date() - timedelta(days=180)
+        evolucion = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_ent=entrenador,
+            fecha_pru__gte=fecha_inicio
+        ).values('fecha_pru').annotate(
+            promedio=models.Avg('promedio_pru')
+        ).order_by('fecha_pru')
+        
+        return {
+            'jugador': jugador,
+            'promedio_general': float(promedio_general),
+            'total_pruebas': total_pruebas,
+            'ultima_prueba': ultima_prueba,
+            'evolucion': list(evolucion)
+        }
+        
+    except Jugador.DoesNotExist:
+        return None
+
+#------------------------------ DASHBOARD JUGADOR-------------------------------------
+
+# Importaciones necesarias para el dashboard del jugador
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db import models
+from django.utils import timezone
+from django.db.models import Count, Avg
+from django.db.models.functions import TruncMonth
+from datetime import timedelta
+import json
 
 
 @login_required
 def dashboard_jugador(request):
-    if request.user.rol_usu != 'jugador':
-        return redirect('home')
-    return render(request, 'dashboard_jugador.html')
+    # Obtener el jugador logueado
+    try:
+        jugador = Jugador.objects.get(fk_id_usu=request.user)
+    except Jugador.DoesNotExist:
+        messages.error(request, "No se encontró el jugador asociado a este usuario.")
+        return redirect('admin_dashboard')
+
+    # Datos básicos del jugador
+    total_pruebas = Prueba.objects.filter(fk_id_jug=jugador).count()
+    
+    promedio_personal = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).aggregate(promedio=models.Avg('promedio_pru'))['promedio'] or 0
+    
+    # Obtener posición en el equipo
+    posicion_equipo = get_posicion_en_equipo(jugador)
+    
+    # Última evaluación
+    ultima_evaluacion_obj = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).order_by('-fecha_pru').first()
+    
+    ultima_evaluacion = ultima_evaluacion_obj.promedio_pru if ultima_evaluacion_obj else 0
+    
+    # Mis últimas 5 pruebas
+    mis_ultimas_pruebas = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).order_by('-fecha_pru')[:5]
+
+    # KPI 1: Rendimiento personal por tipo de evaluación
+    rendimiento_personal = get_rendimiento_personal_por_tipo(jugador)
+    
+    # KPI 2: Evolución del rendimiento personal
+    evolucion_rendimiento = get_evolucion_rendimiento_personal(jugador)
+    
+    # KPI 3: Valoración general del equipo
+    valoracion_equipo = get_valoracion_equipo_jugador(jugador)
+    
+    # KPI 4: Top 5 jugadores del equipo
+    top5_jugadores = get_top5_jugadores_equipo(jugador)
+    
+    # KPI 5: Comparación con promedio del equipo
+    comparacion_equipo = get_comparacion_con_equipo(jugador)
+    
+    # KPI 6: Últimas evaluaciones del jugador
+    ultimas_evaluaciones = get_ultimas_evaluaciones_jugador(jugador)
+
+    context = {
+        'usuario': request.user,
+        'jugador': jugador,
+        'total_pruebas': total_pruebas,
+        'promedio_personal': promedio_personal,
+        'posicion_equipo': posicion_equipo,
+        'ultima_evaluacion': ultima_evaluacion,
+        'mis_ultimas_pruebas': mis_ultimas_pruebas,
+        'rol_usuario': request.user.rol_usu,
+        
+        # Datos para gráficas (convertidos a JSON)
+        'rendimiento_personal': json.dumps(rendimiento_personal),
+        'evolucion_rendimiento': json.dumps(evolucion_rendimiento),
+        'valoracion_equipo': json.dumps(valoracion_equipo),
+        'top5_jugadores': json.dumps(top5_jugadores),
+        'comparacion_equipo': json.dumps(comparacion_equipo),
+        'ultimas_evaluaciones': json.dumps(ultimas_evaluaciones),
+    }
+
+    return render(request, 'Dashboard/dashboard_jugador.html', context)
+
+
+def get_posicion_en_equipo(jugador):
+    """
+    Obtiene la posición del jugador en el ranking del equipo
+    """
+    # Obtener todos los jugadores del mismo equipo con sus promedios
+    jugadores_equipo = Jugador.objects.filter(
+        fk_id_equ=jugador.fk_id_equ,
+        fk_id_usu__estado_usu='activo'
+    ).annotate(
+        promedio_general=models.Avg('prueba__promedio_pru')
+    ).order_by('-promedio_general')
+    
+    # Encontrar la posición del jugador actual
+    for posicion, jug in enumerate(jugadores_equipo, 1):
+        if jug.id_jug == jugador.id_jug:
+            return posicion
+    
+    return 0
+
+
+def get_rendimiento_personal_por_tipo(jugador):
+    """
+    Obtiene el rendimiento personal por tipo de evaluación
+    """
+    tipos_evaluacion = TipoEvaluacion.objects.filter(
+        prueba__fk_id_jug=jugador
+    ).distinct()
+    
+    labels = []
+    data = []
+    
+    for tipo in tipos_evaluacion:
+        promedio = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_tip=tipo
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio:
+            labels.append(tipo.nombre_tip)
+            data.append(float(promedio))
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_evolucion_rendimiento_personal(jugador):
+    """
+    Obtiene la evolución del rendimiento personal en los últimos 6 meses
+    """
+    fecha_inicio = timezone.now().date() - timedelta(days=180)
+    
+    # Obtener pruebas agrupadas por mes
+    pruebas_por_mes = Prueba.objects.filter(
+        fk_id_jug=jugador,
+        fecha_pru__gte=fecha_inicio
+    ).annotate(
+        mes=TruncMonth('fecha_pru')
+    ).values('mes').annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('mes')
+    
+    labels = []
+    data = []
+    
+    for registro in pruebas_por_mes:
+        labels.append(registro['mes'].strftime('%B %Y'))
+        data.append(float(registro['promedio']))
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_valoracion_equipo_jugador(jugador):
+    """
+    Obtiene la valoración general del equipo por tipo de evaluación
+    """
+    tipos_evaluacion = TipoEvaluacion.objects.filter(
+        prueba__fk_id_jug__fk_id_equ=jugador.fk_id_equ
+    ).distinct()
+    
+    labels = []
+    data = []
+    
+    for tipo in tipos_evaluacion:
+        promedio = Prueba.objects.filter(
+            fk_id_jug__fk_id_equ=jugador.fk_id_equ,
+            fk_id_tip=tipo
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio:
+            labels.append(tipo.nombre_tip)
+            data.append(float(promedio))
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+def get_top5_jugadores_equipo(jugador):
+    """
+    Obtiene el top 5 de jugadores del equipo
+    """
+    jugadores_equipo = Jugador.objects.filter(
+        fk_id_equ=jugador.fk_id_equ,
+        fk_id_usu__estado_usu='activo'
+    ).annotate(
+        promedio_general=models.Avg('prueba__promedio_pru')
+    ).order_by('-promedio_general')[:5]
+    
+    labels = []
+    data = []
+    colors = []
+    
+    # Colores para destacar al jugador actual
+    color_jugador_actual = 'rgba(255, 99, 132, 0.8)'  # Rojo
+    color_otros = 'rgba(54, 162, 235, 0.8)'  # Azul
+    
+    for jug in jugadores_equipo:
+        nombre = f"{jug.fk_id_usu.nombres_usu} {jug.fk_id_usu.primer_apellido_usu}"
+        labels.append(nombre)
+        data.append(float(jug.promedio_general or 0))
+        
+        # Destacar al jugador actual
+        if jug.id_jug == jugador.id_jug:
+            colors.append(color_jugador_actual)
+        else:
+            colors.append(color_otros)
+    
+    return {
+        'labels': labels,
+        'data': data,
+        'colors': colors
+    }
+
+
+def get_comparacion_con_equipo(jugador):
+    """
+    Compara el rendimiento del jugador con el promedio del equipo por tipo de evaluación
+    """
+    tipos_evaluacion = TipoEvaluacion.objects.filter(
+        prueba__fk_id_jug=jugador
+    ).distinct()
+    
+    labels = []
+    mi_rendimiento = []
+    promedio_equipo = []
+    
+    for tipo in tipos_evaluacion:
+        # Promedio personal
+        promedio_personal = Prueba.objects.filter(
+            fk_id_jug=jugador,
+            fk_id_tip=tipo
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        # Promedio del equipo
+        promedio_equipo_tipo = Prueba.objects.filter(
+            fk_id_jug__fk_id_equ=jugador.fk_id_equ,
+            fk_id_tip=tipo
+        ).aggregate(promedio=models.Avg('promedio_pru'))['promedio']
+        
+        if promedio_personal and promedio_equipo_tipo:
+            labels.append(tipo.nombre_tip)
+            mi_rendimiento.append(float(promedio_personal))
+            promedio_equipo.append(float(promedio_equipo_tipo))
+    
+    return {
+        'labels': labels,
+        'mi_rendimiento': mi_rendimiento,
+        'promedio_equipo': promedio_equipo
+    }
+
+
+def get_ultimas_evaluaciones_jugador(jugador):
+    """
+    Obtiene las últimas 10 evaluaciones del jugador
+    """
+    ultimas_pruebas = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).order_by('-fecha_pru')[:10]
+    
+    labels = []
+    data = []
+    
+    for prueba in ultimas_pruebas:
+        labels.append(prueba.fecha_pru.strftime('%d/%m'))
+        data.append(float(prueba.promedio_pru))
+    
+    # Invertir para mostrar cronológicamente
+    labels.reverse()
+    data.reverse()
+    
+    return {
+        'labels': labels,
+        'data': data
+    }
+
+
+# Función adicional para obtener estadísticas detalladas del jugador
+def get_estadisticas_detalladas_jugador(jugador):
+    """
+    Obtiene estadísticas detalladas del jugador
+    """
+    # Promedio por temporada
+    promedios_temporada = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).values(
+        'fk_id_temp__nombre_temp'
+    ).annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('-fk_id_temp__fecha_inicio_temp')
+    
+    # Promedio por mesociclo
+    promedios_mesociclo = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).values(
+        'fk_id_ciclo__nombre_ciclo'
+    ).annotate(
+        promedio=models.Avg('promedio_pru')
+    ).order_by('-fecha_pru')
+    
+    # Mejor y peor evaluación
+    mejor_evaluacion = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).order_by('-promedio_pru').first()
+    
+    peor_evaluacion = Prueba.objects.filter(
+        fk_id_jug=jugador
+    ).order_by('promedio_pru').first()
+    
+    return {
+        'promedios_temporada': list(promedios_temporada),
+        'promedios_mesociclo': list(promedios_mesociclo),
+        'mejor_evaluacion': mejor_evaluacion,
+        'peor_evaluacion': peor_evaluacion
+    }
+

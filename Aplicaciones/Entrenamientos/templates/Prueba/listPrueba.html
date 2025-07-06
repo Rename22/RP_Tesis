@@ -20,7 +20,7 @@
         <th>ID</th>
         <th>Jugador</th>
         <th>Tipo Evaluación</th>
-        <th>Macro</th>
+        <th>Ciclo</th>
         <th>Temporada</th>
         <th>Fecha</th>
         <th>Promedio</th>
@@ -40,7 +40,7 @@
           {% endif %}
         </td>
         <td>{{ pru.fk_id_tip.nombre_tip }}</td>
-        <td>{{ pru.macro_pru }}</td>
+        <td>{{ pru.fk_id_ciclo.nombre_ciclo }}</td>
         <td>{{ pru.fk_id_temp.nombre_temp }}</td>
         <td>{{ pru.fecha_pru|date:'d/m/Y' }}</td>
         <td><span class="fw-bold">{{ pru.promedio_pru|floatformat:2 }}</span></td>

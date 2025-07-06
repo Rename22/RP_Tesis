@@ -19,6 +19,17 @@
             </div>
         </div>
 
+        <!-- Switch para activar/desactivar evaluación cualitativa -->
+        <div class="form-group mb-3">
+            <label for="cualitativa_tip">¿Evaluación Cualitativa?</label>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="cualitativa_tip" name="cualitativa_tip">
+                <label class="form-check-label" for="cualitativa_tip">Activar Evaluación Cualitativa</label>
+            </div>
+        </div>
+
+       
+
         <hr>
         <h5 class="text-center">Parámetros de Evaluación</h5>
 
@@ -194,6 +205,21 @@
     .btn-secondary:hover {
         background-color: #7f8c8d;
         border-color: #7f8c8d;
+    }
+
+    /* Estilo para el switch */
+    .form-check-input:checked {
+        background-color: #4CAF50;
+        border-color: #4CAF50;
+    }
+
+    .form-check-label {
+        font-size: 14px;
+        color: #4CAF50;
+    }
+
+    .form-check-input:focus {
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
     }
 </style>
 {% endblock %}
